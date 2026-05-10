@@ -6,19 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-const configuredApiBaseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: '',
-);
+const configuredApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
 
 String get apiBaseUrl {
   if (configuredApiBaseUrl.isNotEmpty) return configuredApiBaseUrl;
   return kIsWeb ? 'http://127.0.0.1:8000/api/mobile' : 'http://10.0.2.2:8000/api/mobile';
 }
 
-void main() {
-  runApp(const PharmacyClientApp());
-}
+void main() => runApp(const PharmacyClientApp());
 
 class PharmacyClientApp extends StatefulWidget {
   const PharmacyClientApp({super.key});
@@ -33,8 +28,6 @@ class _PharmacyClientAppState extends State<PharmacyClientApp> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = ThemeData(brightness: Brightness.light).textTheme.apply(fontFamily: 'Cairo');
-
     return CartScope(
       cart: cart,
       child: MaterialApp(
@@ -42,55 +35,59 @@ class _PharmacyClientAppState extends State<PharmacyClientApp> {
         debugShowCheckedModeBanner: false,
         locale: const Locale('ar'),
         themeMode: themeMode,
-        theme: _theme(Brightness.light, textTheme),
-        darkTheme: _theme(Brightness.dark, textTheme),
-        builder: (context, child) => Directionality(
-          textDirection: ui.TextDirection.rtl,
-          child: child!,
-        ),
+        theme: appTheme(Brightness.light),
+        darkTheme: appTheme(Brightness.dark),
+        builder: (context, child) => Directionality(textDirection: ui.TextDirection.rtl, child: child!),
         home: ClientShell(
-          onToggleTheme: () => setState(() {
-            themeMode = themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-          }),
+          onToggleTheme: () => setState(() => themeMode = themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark),
         ),
       ),
     );
   }
+}
 
-  ThemeData _theme(Brightness brightness, TextTheme textTheme) {
-    final isDark = brightness == Brightness.dark;
-    final scheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xff079669),
-      brightness: brightness,
-      primary: const Color(0xff079669),
-      secondary: const Color(0xff14b8a6),
-      surface: isDark ? const Color(0xff0f172a) : Colors.white,
-    );
+ThemeData appTheme(Brightness brightness) {
+  final dark = brightness == Brightness.dark;
+  final scheme = ColorScheme.fromSeed(
+    seedColor: const Color(0xff059669),
+    brightness: brightness,
+    primary: const Color(0xff059669),
+    secondary: const Color(0xff14b8a6),
+    surface: dark ? const Color(0xff111827) : Colors.white,
+  );
 
-    return ThemeData(
-      useMaterial3: true,
-      brightness: brightness,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: isDark ? const Color(0xff07111f) : const Color(0xfff2f7fb),
-      textTheme: textTheme.apply(
-        bodyColor: isDark ? Colors.white : const Color(0xff0f172a),
-        displayColor: isDark ? Colors.white : const Color(0xff0f172a),
-      ),
-      appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: isDark ? const Color(0xff111c2f) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
-    );
-  }
+  return ThemeData(
+    useMaterial3: true,
+    brightness: brightness,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: dark ? const Color(0xff07111f) : const Color(0xfff1f7fa),
+    fontFamily: 'Cairo',
+    textTheme: ThemeData(brightness: brightness).textTheme.apply(
+          fontFamily: 'Cairo',
+          bodyColor: dark ? Colors.white : const Color(0xff0f172a),
+          displayColor: dark ? Colors.white : const Color(0xff0f172a),
+        ),
+    appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: dark ? const Color(0xff111827) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: dark ? const Color(0xff0f172a) : Colors.white,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide(color: dark ? const Color(0xff1f2937) : const Color(0xffdbe7ef))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide(color: scheme.primary, width: 1.4)),
+    ),
+  );
 }
 
 class ApiClient {
   final http.Client _client = http.Client();
 
   Future<Map<String, dynamic>> getJson(String path, [Map<String, String>? query]) async {
-    final uri = Uri.parse('$apiBaseUrl$path').replace(queryParameters: query);
+    final uri = Uri.parse('$apiBaseUrl$path').replace(queryParameters: query?..removeWhere((_, value) => value.trim().isEmpty));
     final response = await _client.get(uri, headers: {'Accept': 'application/json'});
     return _decode(response);
   }
@@ -107,8 +104,7 @@ class ApiClient {
   Map<String, dynamic> _decode(http.Response response) {
     final decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 400) {
-      final message = decoded['message'] ?? decoded['errors']?.toString() ?? 'حدث خطأ في الاتصال';
-      throw ApiException(message.toString());
+      throw ApiException((decoded['message'] ?? decoded['errors']?.toString() ?? 'حدث خطأ في الاتصال').toString());
     }
     return decoded;
   }
@@ -117,6 +113,8 @@ class ApiClient {
 class ApiException implements Exception {
   ApiException(this.message);
   final String message;
+  @override
+  String toString() => message;
 }
 
 class Product {
@@ -131,31 +129,46 @@ class Product {
     this.discountPercent = 0,
     this.description = '',
     this.categoryName = '',
+    this.sku = '',
+    this.barcode = '',
+    this.images = const [],
   });
 
   final int id;
   final String name;
   final String slug;
+  final String sku;
+  final String barcode;
   final double price;
   final double? comparePrice;
   final String image;
+  final List<String> images;
   final int availableQty;
   final int discountPercent;
   final String description;
   final String categoryName;
 
-  factory Product.fromJson(Map<String, dynamic> json) => Product(
-        id: json['id'] as int,
-        name: json['name'] as String? ?? '',
-        slug: json['slug'] as String? ?? '',
-        price: (json['price'] as num?)?.toDouble() ?? 0,
-        comparePrice: (json['compare_price'] as num?)?.toDouble(),
-        image: json['image'] as String? ?? '',
-        availableQty: (json['available_qty'] as num?)?.toInt() ?? 0,
-        discountPercent: (json['discount_percent'] as num?)?.toInt() ?? 0,
-        description: (json['description'] as String?) ?? (json['short_description'] as String?) ?? '',
-        categoryName: (json['category'] as Map<String, dynamic>?)?['name'] as String? ?? '',
-      );
+  bool get inStock => availableQty > 0;
+
+  factory Product.fromJson(Map<String, dynamic> json) {
+    final image = json['image'] as String? ?? '';
+    final images = (json['images'] as List? ?? []).map((item) => item.toString()).where((item) => item.isNotEmpty).toList();
+    return Product(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      name: json['name'] as String? ?? '',
+      slug: json['slug'] as String? ?? '',
+      sku: json['sku'] as String? ?? '',
+      barcode: json['barcode'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+      comparePrice: (json['compare_price'] as num?)?.toDouble(),
+      image: image,
+      images: images.isEmpty && image.isNotEmpty ? [image] : images,
+      availableQty: (json['available_qty'] as num?)?.toInt() ?? 0,
+      discountPercent: (json['discount_percent'] as num?)?.toInt() ?? 0,
+      description: (json['description'] as String?) ?? (json['short_description'] as String?) ?? '',
+      categoryName: (json['category'] as Map<String, dynamic>?)?['name'] as String? ?? '',
+    );
+  }
 }
 
 class CategoryItem {
@@ -166,10 +179,27 @@ class CategoryItem {
   final int count;
 
   factory CategoryItem.fromJson(Map<String, dynamic> json) => CategoryItem(
-        id: json['id'] as int,
+        id: (json['id'] as num?)?.toInt() ?? 0,
         name: json['name'] as String? ?? '',
         image: json['image'] as String? ?? '',
         count: (json['products_count'] as num?)?.toInt() ?? 0,
+      );
+}
+
+class OrderSummary {
+  OrderSummary({required this.id, required this.status, required this.total, required this.createdAt, required this.items});
+  final int id;
+  final String status;
+  final double total;
+  final String createdAt;
+  final List<dynamic> items;
+
+  factory OrderSummary.fromJson(Map<String, dynamic> json) => OrderSummary(
+        id: (json['id'] as num?)?.toInt() ?? 0,
+        status: json['status'] as String? ?? '',
+        total: (json['total'] as num?)?.toDouble() ?? 0,
+        createdAt: json['created_at'] as String? ?? '',
+        items: json['items'] as List? ?? [],
       );
 }
 
@@ -185,9 +215,12 @@ class CartStore extends ChangeNotifier {
   List<CartItem> get items => _items.values.toList();
   int get count => _items.values.fold(0, (sum, item) => sum + item.qty);
   double get subtotal => _items.values.fold(0, (sum, item) => sum + item.total);
+  double get delivery => subtotal >= 500 || subtotal == 0 ? 0 : 35;
+  double get total => subtotal + delivery;
+  double get freeShippingRemaining => (500 - subtotal).clamp(0, 500).toDouble();
 
   void add(Product product) {
-    if (product.availableQty <= 0) return;
+    if (!product.inStock) return;
     final current = _items[product.id];
     if (current == null) {
       _items[product.id] = CartItem(product: product);
@@ -241,8 +274,9 @@ class _ClientShellState extends State<ClientShell> {
     return AnimatedBuilder(
       animation: CartScope.of(context),
       builder: (context, _) => Scaffold(
-        body: pages[index],
+        body: IndexedStack(index: index, children: pages),
         bottomNavigationBar: NavigationBar(
+          height: 72,
           selectedIndex: index,
           onDestinationSelected: (value) => setState(() => index = value),
           destinations: [
@@ -294,27 +328,28 @@ class _HomeScreenState extends State<HomeScreen> {
           if (snapshot.hasError) return ErrorState(message: snapshot.error.toString(), onRetry: () => setState(() => future = widget.api.getJson('/home')));
 
           final data = snapshot.data!;
-          final store = data['store'] as Map<String, dynamic>;
-          final banners = (data['banners'] as List).cast<Map<String, dynamic>>();
-          final categories = (data['categories'] as List).map((e) => CategoryItem.fromJson(e as Map<String, dynamic>)).toList();
-          final sections = data['sections'] as Map<String, dynamic>;
-          final featured = _products(sections['featured']);
-          final deals = _products(sections['deals']);
-          final best = _products(sections['best_sellers']);
-          final concerns = _maps(sections['concerns']);
+          final store = Map<String, dynamic>.from(data['store'] as Map);
+          final banners = (data['banners'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          final categories = (data['categories'] as List? ?? []).map((e) => CategoryItem.fromJson(e as Map<String, dynamic>)).toList();
+          final sections = data['sections'] as Map<String, dynamic>? ?? {};
+          final featured = productsFrom(sections['featured']);
+          final deals = productsFrom(sections['deals']);
+          final best = productsFrom(sections['best_sellers']);
+          final newest = productsFrom(sections['new_arrivals']);
+          final concerns = mapsFrom(sections['concerns']);
 
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(child: StoreHeader(store: store)),
               SliverToBoxAdapter(child: HeroCarousel(banners: banners)),
               const SliverToBoxAdapter(child: TrustBadges()),
-              SliverToBoxAdapter(child: CategoryStrip(categories: categories)),
+              SliverToBoxAdapter(child: CategoryStrip(categories: categories, onTap: (category) => openProducts(context, widget.api, category: category))),
               SliverToBoxAdapter(child: ProductRail(title: 'عروض اليوم', products: deals, urgent: true)),
               SliverToBoxAdapter(child: ProductRail(title: 'منتجات مميزة', products: featured)),
-              SliverToBoxAdapter(child: ProductRail(title: 'الأكثر مبيعًا', products: best)),
+              SliverToBoxAdapter(child: ProductRail(title: 'الأكثر مبيعا', products: best)),
+              SliverToBoxAdapter(child: ProductRail(title: 'وصل حديثا', products: newest)),
               const SliverToBoxAdapter(child: BrandCarousel()),
               SliverToBoxAdapter(child: ConcernGrid(concerns: concerns)),
-              const SliverToBoxAdapter(child: TestimonialsStrip()),
               const SliverToBoxAdapter(child: AppDownloadBanner()),
               const SliverToBoxAdapter(child: SizedBox(height: 96)),
             ],
@@ -323,9 +358,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
 
-  List<Product> _products(dynamic raw) => (raw as List? ?? []).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
-  List<Map<String, dynamic>> _maps(dynamic raw) => (raw as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+List<Product> productsFrom(dynamic raw) => (raw as List? ?? []).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+List<Map<String, dynamic>> mapsFrom(dynamic raw) => (raw as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+void openProducts(BuildContext context, ApiClient api, {CategoryItem? category}) {
+  Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductsScreen(api: api, initialCategory: category, standalone: true)));
 }
 
 class StoreHeader extends StatelessWidget {
@@ -335,37 +374,25 @@ class StoreHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 10, 14, 14),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [Color(0xff055f46), Color(0xff047857)]),
-      ),
+      padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 10, 14, 16),
+      decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff064e3b), Color(0xff059669)])),
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                height: 50,
-                width: 50,
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(18)),
-                child: const Icon(Icons.medical_services_rounded, color: Colors.white),
+                height: 52,
+                width: 52,
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(18)),
+                child: const Icon(Icons.medication_liquid_rounded, color: Colors.white, size: 28),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      store['name'] as String? ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20),
-                    ),
-                    Text(
-                      store['tagline'] as String? ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.white.withValues(alpha: .78), fontWeight: FontWeight.w700),
-                    ),
+                    Text(store['name'] as String? ?? 'صيدلية د. محمد رمضان', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
+                    Text(store['tagline'] as String? ?? 'رعاية موثوقة وتسوق أسرع', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withValues(alpha: .80), fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
@@ -377,17 +404,31 @@ class StoreHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'ابحث عن دواء، فيتامين، باركود أو منتج صحي',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: const Icon(Icons.qr_code_scanner),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
-            ),
-          ),
+          SearchBox(readOnly: true, onTap: () => openProducts(context, ApiClient())),
         ],
+      ),
+    );
+  }
+}
+
+class SearchBox extends StatelessWidget {
+  const SearchBox({this.controller, this.onChanged, this.onTap, this.readOnly = false, super.key});
+  final TextEditingController? controller;
+  final ValueChanged<String>? onChanged;
+  final VoidCallback? onTap;
+  final bool readOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      onTap: onTap,
+      readOnly: readOnly,
+      decoration: const InputDecoration(
+        hintText: 'ابحث عن دواء، فيتامين، باركود أو منتج صحي',
+        prefixIcon: Icon(Icons.search),
+        suffixIcon: Icon(Icons.qr_code_scanner),
       ),
     );
   }
@@ -406,140 +447,100 @@ class HeroCarousel extends StatelessWidget {
         : banners;
 
     return SizedBox(
-      height: 292,
+      height: 290,
       child: PageView.builder(
-        padEnds: true,
         controller: PageController(viewportFraction: .94),
         itemCount: items.length,
         itemBuilder: (context, index) {
           final banner = items[index];
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 360;
-              return Container(
-                margin: const EdgeInsets.fromLTRB(6, 16, 6, 10),
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  gradient: LinearGradient(
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                    colors: index.isEven
-                        ? const [Color(0xff065f46), Color(0xff059669), Color(0xff34d399)]
-                        : const [Color(0xff075985), Color(0xff0f766e), Color(0xff14b8a6)],
-                  ),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .10), blurRadius: 28, offset: const Offset(0, 14))],
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      left: -50,
-                      top: -40,
-                      child: Container(width: 160, height: 160, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: .12))),
-                    ),
-                    Positioned(
-                      right: -70,
-                      bottom: -80,
-                      child: Container(width: 220, height: 220, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: .10))),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(compact ? 16 : 20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 6,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)),
-                                  child: const Text(
-                                    'منتجات أصلية 100%',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  banner['title'] as String? ?? '',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(color: Colors.white, fontSize: compact ? 25 : 31, fontWeight: FontWeight.w900, height: 1.06),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  banner['subtitle'] as String? ?? '',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(color: Colors.white.withValues(alpha: .88), fontWeight: FontWeight.w800, fontSize: compact ? 12 : 13, height: 1.45),
-                                ),
-                                const SizedBox(height: 14),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    FilledButton(
-                                      onPressed: () {},
-                                      style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xff065f46), visualDensity: VisualDensity.compact),
-                                      child: const Text('تسوق الآن'),
-                                    ),
-                                    OutlinedButton(
-                                      onPressed: () {},
-                                      style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withValues(alpha: .42)), visualDensity: VisualDensity.compact),
-                                      child: const Text('العروض'),
-                                    ),
-                                  ],
-                                ),
-                              ],
+          return Container(
+            margin: const EdgeInsets.fromLTRB(6, 16, 6, 10),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: index.isEven ? const [Color(0xff065f46), Color(0xff059669), Color(0xff34d399)] : const [Color(0xff075985), Color(0xff0f766e), Color(0xff14b8a6)],
+              ),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .10), blurRadius: 28, offset: const Offset(0, 14))],
+            ),
+            child: Stack(
+              children: [
+                const Positioned(left: -50, top: -40, child: CircleBlob(size: 160, opacity: .13)),
+                const Positioned(right: -70, bottom: -80, child: CircleBlob(size: 220, opacity: .10)),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const PillLabel(label: 'منتجات أصلية 100%'),
+                            const SizedBox(height: 12),
+                            Text(banner['title'] as String? ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900, height: 1.06)),
+                            const SizedBox(height: 8),
+                            Text(banner['subtitle'] as String? ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withValues(alpha: .88), fontWeight: FontWeight.w800, fontSize: 13, height: 1.45)),
+                            const SizedBox(height: 14),
+                            FilledButton(
+                              onPressed: () => openProducts(context, ApiClient()),
+                              style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xff065f46)),
+                              child: const Text('تسوق الآن'),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 4,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Container(
-                                  height: compact ? 146 : 172,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: .14),
-                                    borderRadius: BorderRadius.circular(26),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(26),
-                                    child: AppImage(url: banner['image'] as String? ?? '', fit: BoxFit.cover),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: -12,
-                                  right: 10,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .14), blurRadius: 18)]),
-                                    child: const Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text('خصم حتى', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
-                                        Text('40%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xffe11d48), height: 1)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      Expanded(
+                        flex: 4,
+                        child: PharmacyVisual(image: banner['image'] as String? ?? ''),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
+              ],
+            ),
           );
         },
+      ),
+    );
+  }
+}
+
+class CircleBlob extends StatelessWidget {
+  const CircleBlob({required this.size, required this.opacity, super.key});
+  final double size;
+  final double opacity;
+  @override
+  Widget build(BuildContext context) => Container(width: size, height: size, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: opacity)));
+}
+
+class PillLabel extends StatelessWidget {
+  const PillLabel({required this.label, super.key});
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)),
+        child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
+      );
+}
+
+class PharmacyVisual extends StatelessWidget {
+  const PharmacyVisual({required this.image, super.key});
+  final String image;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 150,
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: .15), borderRadius: BorderRadius.circular(28)),
+      child: Center(
+        child: image.isEmpty
+            ? const Icon(Icons.medication_liquid, color: Colors.white, size: 64)
+            : AppImage(url: image, fit: BoxFit.contain),
       ),
     );
   }
@@ -547,70 +548,90 @@ class HeroCarousel extends StatelessWidget {
 
 class TrustBadges extends StatelessWidget {
   const TrustBadges({super.key});
-  final badges = const [
-    (Icons.verified_user_outlined, 'منتجات أصلية'),
-    (Icons.local_shipping_outlined, 'توصيل سريع'),
-    (Icons.payment_outlined, 'دفع آمن'),
-    (Icons.support_agent_outlined, 'دعم مستمر'),
-  ];
 
   @override
   Widget build(BuildContext context) {
+    const items = [
+      [Icons.verified_user_outlined, 'منتجات أصلية', 'مصادر موثوقة'],
+      [Icons.local_shipping_outlined, 'توصيل سريع', '24-48 ساعة'],
+      [Icons.credit_card_outlined, 'دفع آمن', 'حماية كاملة'],
+      [Icons.support_agent_outlined, 'دعم مستمر', 'متابعة الطلب'],
+    ];
+
     return SizedBox(
-      height: 82,
+      height: 96,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         scrollDirection: Axis.horizontal,
-        itemCount: badges.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
-          final badge = badges[index];
-          return Container(
-            width: 170,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(22)),
-            child: Row(children: [Icon(badge.$1, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 10), Text(badge.$2, style: const TextStyle(fontWeight: FontWeight.w900))]),
-          );
+          final item = items[index];
+          return InfoTile(icon: item[0] as IconData, title: item[1] as String, subtitle: item[2] as String);
         },
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemCount: items.length,
+      ),
+    );
+  }
+}
+
+class InfoTile extends StatelessWidget {
+  const InfoTile({required this.icon, required this.title, required this.subtitle, super.key});
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 180,
+      padding: const EdgeInsets.all(14),
+      decoration: softCard(context),
+      child: Row(
+        children: [
+          CircleIcon(icon: icon),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), Text(subtitle, style: mutedStyle(context, 12))])),
+        ],
       ),
     );
   }
 }
 
 class CategoryStrip extends StatelessWidget {
-  const CategoryStrip({required this.categories, super.key});
+  const CategoryStrip({required this.categories, required this.onTap, super.key});
   final List<CategoryItem> categories;
+  final ValueChanged<CategoryItem> onTap;
 
   @override
   Widget build(BuildContext context) {
+    if (categories.isEmpty) return const SizedBox.shrink();
     return SectionBlock(
       title: 'أقسام الصيدلية',
+      action: 'كل الأقسام',
       child: SizedBox(
-        height: 150,
+        height: 156,
         child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           scrollDirection: Axis.horizontal,
           itemCount: categories.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (context, index) {
             final category = categories[index];
-            return SizedBox(
-              width: 126,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(24),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductsScreen(api: ApiClient(), category: category))),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      children: [
-                        Expanded(child: AppImage(url: category.image, fit: BoxFit.contain)),
-                        const SizedBox(height: 8),
-                        Text(category.name, maxLines: 2, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, height: 1.15)),
-                        Text('${category.count} منتج', style: Theme.of(context).textTheme.labelSmall),
-                      ],
-                    ),
-                  ),
+            return InkWell(
+              onTap: () => onTap(category),
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                width: 132,
+                padding: const EdgeInsets.all(12),
+                decoration: softCard(context),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(width: 58, height: 58, child: AppImage(url: category.image, fit: BoxFit.contain)),
+                    const SizedBox(height: 10),
+                    Text(category.name, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, height: 1.2)),
+                    Text('${category.count} منتج', style: mutedStyle(context, 11)),
+                  ],
                 ),
               ),
             );
@@ -630,51 +651,101 @@ class ProductRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (products.isEmpty) return const SizedBox.shrink();
-
     return SectionBlock(
       title: title,
       urgent: urgent,
       child: SizedBox(
-        height: 290,
+        height: 318,
         child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           scrollDirection: Axis.horizontal,
           itemCount: products.length,
           separatorBuilder: (_, __) => const SizedBox(width: 12),
-          itemBuilder: (context, index) => ProductCard(product: products[index], width: 185),
+          itemBuilder: (context, index) => SizedBox(width: 212, child: ProductCard(product: products[index])),
         ),
       ),
     );
   }
 }
 
-class BrandCarousel extends StatelessWidget {
-  const BrandCarousel({super.key});
-
-  static const brands = ['Now', 'Sebamed', 'Accu-Chek', 'Mustela', 'Centrum', 'Vichy', 'La Roche-Posay', 'Bioderma'];
+class ProductCard extends StatelessWidget {
+  const ProductCard({required this.product, super.key});
+  final Product product;
 
   @override
   Widget build(BuildContext context) {
+    final cart = CartScope.of(context);
+    return InkWell(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: product, api: ApiClient()))),
+      borderRadius: BorderRadius.circular(26),
+      child: Container(
+        decoration: softCard(context),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 126,
+                  width: double.infinity,
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .07), borderRadius: BorderRadius.circular(22)),
+                  child: Padding(padding: const EdgeInsets.all(10), child: AppImage(url: product.image, fit: BoxFit.contain)),
+                ),
+                if (product.discountPercent > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(99)), child: Text('${product.discountPercent}%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11))),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, height: 1.3)),
+            const SizedBox(height: 6),
+            Text(product.categoryName.isEmpty ? 'منتج صيدلي' : product.categoryName, maxLines: 1, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 12)),
+            const Spacer(),
+            Row(children: [Expanded(child: Text(money(product.price), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 17))), StockBadge(qty: product.availableQty)]),
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: product.inStock ? () => cart.add(product) : null,
+              icon: const Icon(Icons.add_shopping_cart, size: 17),
+              label: Text(product.inStock ? 'أضف للسلة' : 'غير متاح'),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(42), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class StockBadge extends StatelessWidget {
+  const StockBadge({required this.qty, super.key});
+  final int qty;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(color: qty > 5 ? Colors.green.withValues(alpha: .10) : Colors.orange.withValues(alpha: .12), borderRadius: BorderRadius.circular(99)),
+        child: Text(qty > 0 ? '$qty' : '0', style: TextStyle(color: qty > 5 ? Colors.green.shade700 : Colors.orange.shade800, fontWeight: FontWeight.w900, fontSize: 11)),
+      );
+}
+
+class BrandCarousel extends StatelessWidget {
+  const BrandCarousel({super.key});
+  @override
+  Widget build(BuildContext context) {
+    const brands = ['Bioderma', 'La Roche-Posay', 'Vichy', 'Centrum', 'Mustela', 'Accu-Chek', 'Sebamed', 'Now'];
     return SectionBlock(
       title: 'أشهر الماركات الطبية',
       child: SizedBox(
-        height: 112,
+        height: 82,
         child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           scrollDirection: Axis.horizontal,
           itemCount: brands.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
-          itemBuilder: (context, index) => Container(
-            width: 150,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: .18)),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .04), blurRadius: 16, offset: const Offset(0, 8))],
-            ),
-            child: Text(brands[index], textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.grey, fontSize: 16)),
-          ),
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (context, index) => Container(width: 150, alignment: Alignment.center, decoration: softCard(context), child: Text(brands[index], style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.grey))),
         ),
       ),
     );
@@ -688,105 +759,27 @@ class ConcernGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = concerns.isEmpty
-        ? const [
+        ? [
             {'title': 'المناعة', 'subtitle': 'دعم يومي لصحة أقوى'},
-            {'title': 'السكري', 'subtitle': 'قياس ومتابعة ومنتجات أساسية'},
-            {'title': 'ضغط الدم', 'subtitle': 'أجهزة ومنتجات متابعة منزلية'},
-            {'title': 'العناية بالبشرة', 'subtitle': 'حلول طبية لبشرة صحية'},
+            {'title': 'السكري', 'subtitle': 'قياس ومتابعة'},
+            {'title': 'ضغط الدم', 'subtitle': 'أجهزة منزلية'},
           ]
         : concerns;
-
     return SectionBlock(
       title: 'تسوق حسب الاحتياج',
-      child: GridView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisExtent: 142, crossAxisSpacing: 12, mainAxisSpacing: 12),
-        itemCount: items.take(6).length,
-        itemBuilder: (context, index) {
-          final item = items[index];
-          final colors = [
-            const Color(0xffecfdf5),
-            const Color(0xffeff6ff),
-            const Color(0xfffff1f2),
-            const Color(0xfffff7ed),
-            const Color(0xfff5f3ff),
-            const Color(0xfff0fdf4),
-          ];
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(color: colors[index % colors.length], borderRadius: BorderRadius.circular(18)),
-                    child: Icon(Icons.medication_liquid_outlined, color: Theme.of(context).colorScheme.primary),
-                  ),
-                  const Spacer(),
-                  Text(item['title'] as String? ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
-                  const SizedBox(height: 4),
-                  Text(item['subtitle'] as String? ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Colors.grey.shade600, fontWeight: FontWeight.w700)),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class TestimonialsStrip extends StatelessWidget {
-  const TestimonialsStrip({super.key});
-
-  static const reviews = [
-    ('أحمد', 'تجربة شراء ممتازة والتوصيل كان سريع جدا.'),
-    ('منى', 'المنتجات وصلت مغلفة ونظيفة والأسعار واضحة.'),
-    ('كريم', 'واجهة سهلة والعروض واضحة. طلبت في دقائق.'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SectionBlock(
-      title: 'ثقة يومية من عملائنا',
-      child: SizedBox(
-        height: 162,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          scrollDirection: Axis.horizontal,
-          itemCount: reviews.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 1.45),
+          itemCount: items.length,
           itemBuilder: (context, index) {
-            final review = reviews[index];
+            final item = items[index];
             return Container(
-              width: 280,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(24), border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: .16))),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(backgroundColor: const Color(0xffbbf7d0), child: Text(review.$1.substring(0, 1), style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xff065f46)))),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text(review.$1, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16))),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: const Color(0xffe0f2fe), borderRadius: BorderRadius.circular(99)),
-                        child: const Text('شراء موثق', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xff0369a1))),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('★★★★★', style: TextStyle(color: Color(0xffffb020), letterSpacing: 1.5)),
-                  const SizedBox(height: 8),
-                  Text(review.$2, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w700, height: 1.5)),
-                ],
-              ),
+              padding: const EdgeInsets.all(16),
+              decoration: softCard(context),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [const CircleIcon(icon: Icons.medication_outlined), const SizedBox(height: 12), Text(item['title']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)), Text(item['subtitle']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 12))]),
             );
           },
         ),
@@ -800,321 +793,216 @@ class AppDownloadBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        gradient: const LinearGradient(colors: [Color(0xff063f36), Color(0xff0f766e)]),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('تطبيق العملاء', style: TextStyle(color: Color(0xffa7f3d0), fontWeight: FontWeight.w900)),
-                const SizedBox(height: 6),
-                const Text('تسوق من الموبايل بسهولة', maxLines: 2, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24, height: 1.15)),
-                const SizedBox(height: 10),
-                Text('منتجات، عروض، سلة، وتتبع طلبات في تجربة واحدة.', style: TextStyle(color: Colors.white.withValues(alpha: .78), fontWeight: FontWeight.w700, height: 1.5)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 112,
-            height: 186,
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: const Color(0xff020617),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .22), blurRadius: 24, offset: const Offset(0, 14))],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(25),
-              child: Container(
-                color: const Color(0xfff4f8fb),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(7, 9, 7, 7),
-                      decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff065f46), Color(0xff10b981)])),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Container(width: 18, height: 18, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .18), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.medical_services, color: Colors.white, size: 11)),
-                              const SizedBox(width: 5),
-                              const Expanded(child: Text('صيدلية د. محمد رمضان', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white, fontSize: 6.5, fontWeight: FontWeight.w900))),
-                            ],
-                          ),
-                          const SizedBox(height: 7),
-                          Container(height: 17, alignment: Alignment.centerRight, padding: const EdgeInsets.symmetric(horizontal: 7), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)), child: const Text('ابحث عن منتج صحي', style: TextStyle(color: Colors.grey, fontSize: 5.5, fontWeight: FontWeight.w800))),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Container(
-                              height: 58,
-                              padding: const EdgeInsets.all(7),
-                              decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), gradient: const LinearGradient(colors: [Color(0xff065f46), Color(0xff34d399)])),
-                              child: const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('منتجات أصلية 100%', style: TextStyle(color: Colors.white, fontSize: 5.5, fontWeight: FontWeight.w900)),
-                                  SizedBox(height: 3),
-                                  Text('عروض الصيدلية', maxLines: 1, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, height: 1)),
-                                  Spacer(),
-                                  Icon(Icons.medication_liquid, color: Colors.white, size: 18),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Row(children: [
-                              Expanded(child: _MiniAppPill(label: 'أصلية', icon: Icons.verified_user_outlined)),
-                              SizedBox(width: 5),
-                              Expanded(child: _MiniAppPill(label: 'توصيل', icon: Icons.local_shipping_outlined)),
-                            ]),
-                            const SizedBox(height: 6),
-                            const Align(alignment: Alignment.centerRight, child: Text('أقسام الصيدلية', style: TextStyle(fontSize: 7, fontWeight: FontWeight.w900))),
-                            const SizedBox(height: 5),
-                            const Row(children: [
-                              Expanded(child: _MiniCategory(label: 'أدوية')),
-                              SizedBox(width: 5),
-                              Expanded(child: _MiniCategory(label: 'بشرة')),
-                              SizedBox(width: 5),
-                              Expanded(child: _MiniCategory(label: 'طفل')),
-                            ]),
-                            const SizedBox(height: 6),
-                            const Expanded(
-                              child: Row(children: [
-                                Expanded(child: _MiniProduct()),
-                                SizedBox(width: 5),
-                                Expanded(child: _MiniProduct(price: '69 ج.م')),
-                              ]),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniAppPill extends StatelessWidget {
-  const _MiniAppPill({required this.label, required this.icon});
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 24,
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 9, color: const Color(0xff047857)),
-          const SizedBox(width: 3),
-          Flexible(child: Text(label, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 5.5, fontWeight: FontWeight.w900))),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniCategory extends StatelessWidget {
-  const _MiniCategory({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 34,
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(11)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.medical_services, color: Color(0xff047857), size: 13),
-          const SizedBox(height: 2),
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 5.5, fontWeight: FontWeight.w900)),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniProduct extends StatelessWidget {
-  const _MiniProduct({this.price = '48 ج.م'});
-  final String price;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(color: const Color(0xffecfdf5), borderRadius: BorderRadius.circular(9)),
-              child: const Icon(Icons.medication_liquid, color: Color(0xff047857), size: 15),
-            ),
-          ),
-          const SizedBox(height: 3),
-          const Text('منتج صيدلي', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 5.5, fontWeight: FontWeight.w900)),
-          Text(price, maxLines: 1, style: const TextStyle(fontSize: 6, fontWeight: FontWeight.w900, color: Color(0xff04799b))),
-        ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 22, 14, 0),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), gradient: const LinearGradient(colors: [Color(0xff052e2b), Color(0xff0f766e)])),
+        child: Row(
+          children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('تطبيق الصيدلية', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w900)), const SizedBox(height: 8), const Text('اطلب أدويتك أسرع', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 27)), const SizedBox(height: 10), Text('تنبيهات للطلبات وسهولة متابعة السلة والدفع.', style: TextStyle(color: Colors.white.withValues(alpha: .75), fontWeight: FontWeight.w700))])),
+            Container(width: 96, height: 160, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)), child: const Icon(Icons.phone_iphone, color: Color(0xff059669), size: 58)),
+          ],
+        ),
       ),
     );
   }
 }
 
 class ProductsScreen extends StatefulWidget {
-  const ProductsScreen({required this.api, this.category, super.key});
+  const ProductsScreen({required this.api, this.initialCategory, this.standalone = false, super.key});
   final ApiClient api;
-  final CategoryItem? category;
+  final CategoryItem? initialCategory;
+  final bool standalone;
 
   @override
   State<ProductsScreen> createState() => _ProductsScreenState();
 }
 
 class _ProductsScreenState extends State<ProductsScreen> {
-  late Future<List<Product>> future;
-  final searchController = TextEditingController();
+  final search = TextEditingController();
+  String sort = 'latest';
+  bool inStockOnly = false;
+  bool grid = true;
+  CategoryItem? selectedCategory;
+  late Future<List<CategoryItem>> categoriesFuture;
+  late Future<List<Product>> productsFuture;
 
   @override
   void initState() {
     super.initState();
-    future = load();
+    selectedCategory = widget.initialCategory;
+    categoriesFuture = widget.api.getJson('/categories').then((json) => (json['data'] as List).map((e) => CategoryItem.fromJson(e as Map<String, dynamic>)).toList());
+    productsFuture = loadProducts();
   }
 
-  Future<List<Product>> load() async {
-    final query = <String, String>{'per_page': '60'};
-    if (widget.category != null) query['category_id'] = '${widget.category!.id}';
-    if (searchController.text.trim().isNotEmpty) query['q'] = searchController.text.trim();
+  Future<List<Product>> loadProducts() async {
+    final query = <String, String>{
+      'q': search.text,
+      'sort': sort,
+      'per_page': '60',
+      if (selectedCategory != null) 'category_id': '${selectedCategory!.id}',
+    };
     final json = await widget.api.getJson('/products', query);
-    return (json['data'] as List).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+    final items = (json['data'] as List).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+    return inStockOnly ? items.where((item) => item.inStock).toList() : items;
   }
+
+  void reload() => setState(() => productsFuture = loadProducts());
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.category?.name ?? 'كل المنتجات')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: searchController,
-              onSubmitted: (_) => setState(() => future = load()),
-              decoration: InputDecoration(
-                hintText: 'ابحث بالاسم أو SKU أو الباركود',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(icon: const Icon(Icons.tune), onPressed: () {}),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
-              ),
-            ),
-          ),
-          Expanded(
-            child: FutureBuilder<List<Product>>(
-              future: future,
+    final content = RefreshIndicator(
+      onRefresh: () async => reload(),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: ProductsHeader(search: search, onSearch: (_) => reload(), grid: grid, onToggleGrid: () => setState(() => grid = !grid))),
+          SliverToBoxAdapter(child: FilterPanel(categoriesFuture: categoriesFuture, selected: selectedCategory, sort: sort, inStockOnly: inStockOnly, onCategory: (value) => setState(() { selectedCategory = value; productsFuture = loadProducts(); }), onSort: (value) => setState(() { sort = value; productsFuture = loadProducts(); }), onStock: (value) => setState(() { inStockOnly = value; productsFuture = loadProducts(); }))),
+          FutureSliverProducts(future: productsFuture, grid: grid, api: widget.api),
+          const SliverToBoxAdapter(child: SizedBox(height: 96)),
+        ],
+      ),
+    );
+
+    if (!widget.standalone) return content;
+    return Scaffold(appBar: AppBar(title: const Text('كل المنتجات')), body: content);
+  }
+}
+
+class ProductsHeader extends StatelessWidget {
+  const ProductsHeader({required this.search, required this.onSearch, required this.grid, required this.onToggleGrid, super.key});
+  final TextEditingController search;
+  final ValueChanged<String> onSearch;
+  final bool grid;
+  final VoidCallback onToggleGrid;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 10, 14, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [Expanded(child: Text('كل المنتجات', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900))), IconButton.filledTonal(onPressed: onToggleGrid, icon: Icon(grid ? Icons.view_list : Icons.grid_view))]),
+            const SizedBox(height: 12),
+            SearchBox(controller: search, onChanged: onSearch),
+          ],
+        ),
+      );
+}
+
+class FilterPanel extends StatelessWidget {
+  const FilterPanel({required this.categoriesFuture, required this.selected, required this.sort, required this.inStockOnly, required this.onCategory, required this.onSort, required this.onStock, super.key});
+  final Future<List<CategoryItem>> categoriesFuture;
+  final CategoryItem? selected;
+  final String sort;
+  final bool inStockOnly;
+  final ValueChanged<CategoryItem?> onCategory;
+  final ValueChanged<String> onSort;
+  final ValueChanged<bool> onStock;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Column(
+          children: [
+            FutureBuilder<List<CategoryItem>>(
+              future: categoriesFuture,
               builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-                if (snapshot.hasError) return ErrorState(message: snapshot.error.toString(), onRetry: () => setState(() => future = load()));
-                final products = snapshot.data ?? [];
-                if (products.isEmpty) return const EmptyState(title: 'لا توجد منتجات', subtitle: 'جرّب البحث بكلمة أخرى.');
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisExtent: 292, crossAxisSpacing: 12, mainAxisSpacing: 12),
-                  itemCount: products.length,
-                  itemBuilder: (context, index) => ProductCard(product: products[index]),
+                final categories = snapshot.data ?? [];
+                return SizedBox(
+                  height: 48,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: ChoiceChip(label: const Text('الكل'), selected: selected == null, onSelected: (_) => onCategory(null))),
+                      ...categories.map((category) => Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: ChoiceChip(label: Text(category.name), selected: selected?.id == category.id, onSelected: (_) => onCategory(category)))),
+                    ],
+                  ),
                 );
               },
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    initialValue: sort,
+                    decoration: const InputDecoration(labelText: 'الترتيب'),
+                    items: const [
+                      DropdownMenuItem(value: 'latest', child: Text('الأحدث')),
+                      DropdownMenuItem(value: 'price_asc', child: Text('الأقل سعرا')),
+                      DropdownMenuItem(value: 'price_desc', child: Text('الأعلى سعرا')),
+                      DropdownMenuItem(value: 'name_asc', child: Text('الاسم')),
+                    ],
+                    onChanged: (value) => onSort(value ?? 'latest'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                FilterChip(label: const Text('متوفر فقط'), selected: inStockOnly, onSelected: onStock),
+              ],
+            ),
+          ],
+        ),
+      );
+}
+
+class FutureSliverProducts extends StatelessWidget {
+  const FutureSliverProducts({required this.future, required this.grid, required this.api, super.key});
+  final Future<List<Product>> future;
+  final bool grid;
+  final ApiClient api;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Product>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) return const SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
+        if (snapshot.hasError) return SliverFillRemaining(child: ErrorState(message: snapshot.error.toString(), onRetry: () {}));
+        final products = snapshot.data ?? [];
+        if (products.isEmpty) return const SliverFillRemaining(child: EmptyState(title: 'لا توجد منتجات', subtitle: 'جرب تغيير الفلاتر أو البحث باسم آخر.'));
+
+        if (!grid) {
+          return SliverList.separated(
+            itemCount: products.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) => Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: ProductListTile(product: products[index], api: api)),
+          );
+        }
+
+        return SliverPadding(
+          padding: const EdgeInsets.all(14),
+          sliver: SliverGrid(
+            delegate: SliverChildBuilderDelegate((context, index) => ProductCard(product: products[index]), childCount: products.length),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: .58),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
-class ProductCard extends StatelessWidget {
-  const ProductCard({required this.product, this.width, super.key});
+class ProductListTile extends StatelessWidget {
+  const ProductListTile({required this.product, required this.api, super.key});
   final Product product;
-  final double? width;
+  final ApiClient api;
 
   @override
   Widget build(BuildContext context) {
     final cart = CartScope.of(context);
-    return SizedBox(
-      width: width,
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: product, api: ApiClient()))),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      Positioned.fill(child: AppImage(url: product.image, fit: BoxFit.contain)),
-                      if (product.discountPercent > 0)
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                            decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(99)),
-                            child: Text('خصم ${product.discountPercent}%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, height: 1.25)),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Text(money(product.price), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 16)),
-                    if (product.comparePrice != null) ...[
-                      const SizedBox(width: 6),
-                      Text(money(product.comparePrice!), style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontSize: 11)),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: product.availableQty > 0 ? () => cart.add(product) : null,
-                    icon: const Icon(Icons.add_shopping_cart, size: 18),
-                    label: Text(product.availableQty > 0 ? 'أضف للسلة' : 'غير متاح'),
-                  ),
-                ),
-              ],
-            ),
-          ),
+    return InkWell(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: product, api: api))),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: softCard(context),
+        child: Row(
+          children: [
+            SizedBox(width: 84, height: 84, child: AppImage(url: product.image)),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)), Text(product.categoryName, style: mutedStyle(context, 12)), const SizedBox(height: 6), Text(money(product.price), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900))])),
+            IconButton.filledTonal(onPressed: product.inStock ? () => cart.add(product) : null, icon: const Icon(Icons.add_shopping_cart)),
+          ],
         ),
       ),
     );
@@ -1148,30 +1036,27 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         future: future,
         builder: (context, snapshot) {
           final product = snapshot.data ?? widget.product;
+          final images = product.images.isEmpty ? [product.image] : product.images;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                child: SizedBox(height: 320, child: Padding(padding: const EdgeInsets.all(20), child: AppImage(url: product.image, fit: BoxFit.contain))),
+              SizedBox(
+                height: 330,
+                child: PageView.builder(
+                  itemCount: images.length,
+                  itemBuilder: (context, index) => Container(margin: const EdgeInsets.symmetric(horizontal: 3), decoration: softCard(context), child: Padding(padding: const EdgeInsets.all(20), child: AppImage(url: images[index], fit: BoxFit.contain))),
+                ),
               ),
               const SizedBox(height: 18),
               Text(product.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
               const SizedBox(height: 8),
-              Text(product.categoryName, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 14),
+              Wrap(spacing: 8, runSpacing: 8, children: [Chip(label: Text(product.categoryName.isEmpty ? 'منتج صيدلي' : product.categoryName)), Chip(label: Text(product.inStock ? 'متوفر ${product.availableQty}' : 'غير متاح')), if (product.discountPercent > 0) Chip(label: Text('خصم ${product.discountPercent}%')), const Chip(label: Text('منتج أصلي'))]),
+              const SizedBox(height: 16),
               Text(money(product.price), style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Chip(label: Text(product.availableQty > 0 ? 'متوفر ${product.availableQty}' : 'غير متاح')),
-                  if (product.discountPercent > 0) Chip(label: Text('خصم ${product.discountPercent}%')),
-                  const Chip(label: Text('منتج أصلي')),
-                ],
-              ),
+              if (product.comparePrice != null && product.comparePrice! > product.price) Text(money(product.comparePrice!), style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontWeight: FontWeight.w800)),
               const SizedBox(height: 18),
-              Text(product.description.isEmpty ? 'منتج صيدلي موثوق متاح للطلب من التطبيق.' : product.description, style: const TextStyle(height: 1.8, fontWeight: FontWeight.w600)),
+              Text(product.description.isEmpty ? 'منتج صيدلي موثوق متاح للطلب من التطبيق، ويتم ربط الطلب مباشرة بلوحة التحكم والمخزون.' : product.description, style: const TextStyle(height: 1.8, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 96),
             ],
           );
         },
@@ -1179,9 +1064,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(16),
         child: FilledButton.icon(
-          onPressed: widget.product.availableQty > 0 ? () => cart.add(widget.product) : null,
+          onPressed: widget.product.inStock ? () => cart.add(widget.product) : null,
           icon: const Icon(Icons.add_shopping_cart),
-          label: const Text('إضافة للسلة'),
+          label: Text(widget.product.inStock ? 'إضافة للسلة - ${money(widget.product.price)}' : 'غير متاح حاليا'),
         ),
       ),
     );
@@ -1201,48 +1086,70 @@ class CartScreen extends StatelessWidget {
         appBar: AppBar(title: const Text('سلة المشتريات')),
         body: cart.items.isEmpty
             ? const EmptyState(title: 'السلة فارغة', subtitle: 'أضف منتجاتك المفضلة ثم أكمل الطلب.')
-            : ListView.separated(
+            : ListView(
                 padding: const EdgeInsets.all(16),
-                itemCount: cart.items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final item = cart.items[index];
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          SizedBox(width: 72, height: 72, child: AppImage(url: item.product.image)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(item.product.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
-                              Text(money(item.product.price), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900)),
-                            ]),
-                          ),
-                          QuantityStepper(value: item.qty, onChanged: (qty) => cart.setQty(item.product, qty)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                children: [
+                  CartSummary(cart: cart),
+                  const SizedBox(height: 14),
+                  ...cart.items.map((item) => CartItemCard(item: item, cart: cart)),
+                  const SizedBox(height: 100),
+                ],
               ),
         bottomNavigationBar: cart.items.isEmpty
             ? null
             : SafeArea(
                 minimum: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(child: Text('الإجمالي\n${money(cart.subtotal)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18))),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CheckoutScreen(api: api))),
-                        child: const Text('إتمام الطلب'),
-                      ),
-                    ),
-                  ],
-                ),
+                child: FilledButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CheckoutScreen(api: api))), icon: const Icon(Icons.lock_outline), label: Text('إتمام الطلب - ${money(cart.total)}')),
               ),
+      ),
+    );
+  }
+}
+
+class CartSummary extends StatelessWidget {
+  const CartSummary({required this.cart, super.key});
+  final CartStore cart;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = (cart.subtotal / 500).clamp(0, 1).toDouble();
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), gradient: const LinearGradient(colors: [Color(0xff065f46), Color(0xff14b8a6)])),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('ملخص السلة', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 6),
+          Text(money(cart.total), style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 12),
+          ClipRRect(borderRadius: BorderRadius.circular(99), child: LinearProgressIndicator(value: progress, minHeight: 8, backgroundColor: Colors.white24, valueColor: const AlwaysStoppedAnimation(Colors.white))),
+          const SizedBox(height: 8),
+          Text(cart.freeShippingRemaining > 0 ? 'أضف ${money(cart.freeShippingRemaining)} للحصول على شحن مجاني' : 'طلبك مؤهل للشحن المجاني', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+}
+
+class CartItemCard extends StatelessWidget {
+  const CartItemCard({required this.item, required this.cart, super.key});
+  final CartItem item;
+  final CartStore cart;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: softCard(context),
+      child: Row(
+        children: [
+          SizedBox(width: 78, height: 78, child: AppImage(url: item.product.image)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(item.product.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)), Text(money(item.total), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900))])),
+          QuantityStepper(value: item.qty, onChanged: (qty) => cart.setQty(item.product, qty)),
+        ],
       ),
     );
   }
@@ -1262,6 +1169,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final phone = TextEditingController();
   final city = TextEditingController();
   final address = TextEditingController();
+  final notes = TextEditingController();
   bool loading = false;
 
   @override
@@ -1274,17 +1182,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _field(name, 'اسم العميل', Icons.person_outline),
-            _field(phone, 'رقم الجوال', Icons.phone_outlined, keyboard: TextInputType.phone),
-            _field(city, 'المدينة', Icons.location_city_outlined),
-            _field(address, 'العنوان التفصيلي', Icons.location_on_outlined, maxLines: 3),
-            Card(
-              child: ListTile(
-                title: const Text('إجمالي الطلب', style: TextStyle(fontWeight: FontWeight.w900)),
-                subtitle: Text('${cart.count} منتج'),
-                trailing: Text(money(cart.subtotal), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18)),
-              ),
-            ),
+            CheckoutStepHeader(total: cart.total, count: cart.count),
+            const SizedBox(height: 16),
+            field(name, 'اسم العميل', Icons.person_outline, required: true),
+            field(phone, 'رقم الجوال', Icons.phone_outlined, keyboard: TextInputType.phone, required: true),
+            field(city, 'المدينة', Icons.location_city_outlined),
+            field(address, 'العنوان التفصيلي', Icons.location_on_outlined, maxLines: 3),
+            field(notes, 'ملاحظات للصيدلية', Icons.note_alt_outlined, maxLines: 3),
           ],
         ),
       ),
@@ -1299,15 +1203,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _field(TextEditingController controller, String label, IconData icon, {TextInputType? keyboard, int maxLines = 1}) {
+  Widget field(TextEditingController controller, String label, IconData icon, {TextInputType? keyboard, int maxLines = 1, bool required = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboard,
         maxLines: maxLines,
-        validator: (value) => (value == null || value.trim().isEmpty) && (label.contains('اسم') || label.contains('جوال')) ? 'مطلوب' : null,
-        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon), border: OutlineInputBorder(borderRadius: BorderRadius.circular(18))),
+        validator: (value) => required && (value == null || value.trim().isEmpty) ? 'مطلوب' : null,
+        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
       ),
     );
   }
@@ -1321,21 +1225,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'phone': phone.text.trim(),
         'city': city.text.trim(),
         'address': address.text.trim(),
+        'notes': notes.text.trim(),
         'items': cart.items.map((item) => {'product_id': item.product.id, 'qty': item.qty}).toList(),
       });
       cart.clear();
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: response['data'] as Map<String, dynamic>)),
-        (route) => route.isFirst,
-      );
+      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: response['data'] as Map<String, dynamic>)), (route) => route.isFirst);
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error is ApiException ? error.message : error.toString())));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted) setState(() => loading = false);
     }
   }
+}
+
+class CheckoutStepHeader extends StatelessWidget {
+  const CheckoutStepHeader({required this.total, required this.count, super.key});
+  final double total;
+  final int count;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(18),
+        decoration: softCard(context),
+        child: Row(children: [const CircleIcon(icon: Icons.receipt_long), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('إتمام الطلب', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)), Text('$count منتج - ${money(total)}', style: mutedStyle(context, 13))]))]),
+      );
 }
 
 class OrdersScreen extends StatefulWidget {
@@ -1348,7 +1261,7 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   final phone = TextEditingController();
-  Future<List<dynamic>>? future;
+  Future<List<OrderSummary>>? future;
 
   @override
   Widget build(BuildContext context) {
@@ -1361,39 +1274,25 @@ class _OrdersScreenState extends State<OrdersScreen> {
             child: TextField(
               controller: phone,
               keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: 'رقم الجوال',
-                prefixIcon: const Icon(Icons.phone),
-                suffixIcon: IconButton(icon: const Icon(Icons.search), onPressed: load),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
-              ),
+              decoration: InputDecoration(labelText: 'رقم الجوال', prefixIcon: const Icon(Icons.phone), suffixIcon: IconButton(icon: const Icon(Icons.search), onPressed: load)),
               onSubmitted: (_) => load(),
             ),
           ),
           Expanded(
             child: future == null
-                ? const EmptyState(title: 'تتبع الطلبات', subtitle: 'اكتب رقم الجوال لعرض طلباتك.')
-                : FutureBuilder<List<dynamic>>(
+                ? const EmptyState(title: 'تتبع الطلبات', subtitle: 'اكتب رقم الجوال لعرض طلباتك وحالة كل طلب.')
+                : FutureBuilder<List<OrderSummary>>(
                     future: future,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
                       if (snapshot.hasError) return ErrorState(message: snapshot.error.toString(), onRetry: load);
                       final orders = snapshot.data ?? [];
-                      if (orders.isEmpty) return const EmptyState(title: 'لا توجد طلبات', subtitle: 'لا يوجد طلبات مسجلة لهذا الرقم.');
+                      if (orders.isEmpty) return const EmptyState(title: 'لا توجد طلبات', subtitle: 'لا توجد طلبات مسجلة لهذا الرقم.');
                       return ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: orders.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final order = orders[index] as Map<String, dynamic>;
-                          return Card(
-                            child: ListTile(
-                              title: Text('طلب #${order['id']}', style: const TextStyle(fontWeight: FontWeight.w900)),
-                              subtitle: Text('${order['status']} - ${order['created_at'] ?? ''}'),
-                              trailing: Text(money((order['total'] as num?)?.toDouble() ?? 0), style: const TextStyle(fontWeight: FontWeight.w900)),
-                            ),
-                          );
-                        },
+                        itemBuilder: (context, index) => OrderCard(order: orders[index]),
                       );
                     },
                   ),
@@ -1406,9 +1305,28 @@ class _OrdersScreenState extends State<OrdersScreen> {
   void load() {
     final value = phone.text.trim();
     if (value.isEmpty) return;
-    setState(() {
-      future = widget.api.getJson('/orders', {'phone': value}).then((json) => json['data'] as List<dynamic>);
-    });
+    setState(() => future = widget.api.getJson('/orders', {'phone': value}).then((json) => (json['data'] as List).map((e) => OrderSummary.fromJson(e as Map<String, dynamic>)).toList()));
+  }
+}
+
+class OrderCard extends StatelessWidget {
+  const OrderCard({required this.order, super.key});
+  final OrderSummary order;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: softCard(context),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Expanded(child: Text('طلب #${order.id}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18))), StatusChip(status: order.status)]), const SizedBox(height: 10), Text(order.createdAt, style: mutedStyle(context, 12)), const SizedBox(height: 8), Row(children: [Expanded(child: Text('${order.items.length} بند', style: mutedStyle(context, 13))), Text(money(order.total), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18))])]),
+      );
+}
+
+class StatusChip extends StatelessWidget {
+  const StatusChip({required this.status, super.key});
+  final String status;
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (status) { 'new' => Colors.blue, 'preparing' => Colors.orange, 'shipped' => Colors.purple, 'completed' => Colors.green, 'cancelled' => Colors.red, _ => Colors.grey };
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(99)), child: Text(status, style: TextStyle(color: color.shade700, fontWeight: FontWeight.w900, fontSize: 12)));
   }
 }
 
@@ -1417,52 +1335,38 @@ class OrderSuccessScreen extends StatelessWidget {
   final Map<String, dynamic> order;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.check_circle, size: 96, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(height: 16),
-              const Text('تم إنشاء الطلب بنجاح', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 8),
-              Text('رقم الطلب #${order['id']} - الإجمالي ${money((order['total'] as num?)?.toDouble() ?? 0)}', textAlign: TextAlign.center),
-              const SizedBox(height: 24),
-              FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('العودة للرئيسية')),
-            ],
+  Widget build(BuildContext context) => Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.check_circle, size: 96, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 16), const Text('تم إنشاء الطلب بنجاح', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)), const SizedBox(height: 8), Text('رقم الطلب #${order['id']} - الإجمالي ${money((order['total'] as num?)?.toDouble() ?? 0)}', textAlign: TextAlign.center), const SizedBox(height: 24), FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('العودة للرئيسية'))]),
           ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 class SectionBlock extends StatelessWidget {
-  const SectionBlock({required this.title, required this.child, this.urgent = false, super.key});
+  const SectionBlock({required this.title, required this.child, this.action, this.urgent = false, super.key});
   final String title;
   final Widget child;
+  final String? action;
   final bool urgent;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900, color: urgent ? Colors.redAccent : null)),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(children: [Expanded(child: Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900, color: urgent ? Colors.redAccent : null))), if (action != null) Text(action!, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900))]),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      );
 }
 
 class AppImage extends StatelessWidget {
@@ -1472,23 +1376,11 @@ class AppImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (url.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(20)),
-        child: Icon(Icons.medication_liquid, color: Theme.of(context).colorScheme.primary, size: 54),
-      );
-    }
-
-    return Image.network(
-      url,
-      fit: fit,
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return Container(color: Theme.of(context).colorScheme.primary.withValues(alpha: .06));
-      },
-      errorBuilder: (_, __, ___) => Icon(Icons.medication_liquid, color: Theme.of(context).colorScheme.primary, size: 48),
-    );
+    if (url.isEmpty) return fallback(context);
+    return Image.network(url, fit: fit, loadingBuilder: (context, child, progress) => progress == null ? child : fallback(context), errorBuilder: (_, __, ___) => fallback(context));
   }
+
+  Widget fallback(BuildContext context) => Container(decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(20)), child: Icon(Icons.medication_liquid, color: Theme.of(context).colorScheme.primary, size: 44));
 }
 
 class QuantityStepper extends StatelessWidget {
@@ -1497,85 +1389,46 @@ class QuantityStepper extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton.filledTonal(onPressed: () => onChanged(value + 1), icon: const Icon(Icons.add)),
-        Text('$value', style: const TextStyle(fontWeight: FontWeight.w900)),
-        IconButton.filledTonal(onPressed: () => onChanged(value - 1), icon: const Icon(Icons.remove)),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [IconButton.filledTonal(onPressed: () => onChanged(value + 1), icon: const Icon(Icons.add)), Text('$value', style: const TextStyle(fontWeight: FontWeight.w900)), IconButton.filledTonal(onPressed: () => onChanged(value - 1), icon: const Icon(Icons.remove))]);
 }
+
+class CircleIcon extends StatelessWidget {
+  const CircleIcon({required this.icon, super.key});
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) => Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .10), borderRadius: BorderRadius.circular(16)), child: Icon(icon, color: Theme.of(context).colorScheme.primary));
+}
+
+BoxDecoration softCard(BuildContext context) => BoxDecoration(
+      color: Theme.of(context).cardTheme.color,
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xff1f2937) : const Color(0xffdbe7ef)),
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0 : .05), blurRadius: 24, offset: const Offset(0, 10))],
+    );
+
+TextStyle mutedStyle(BuildContext context, double size) => TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55), fontWeight: FontWeight.w700, fontSize: size);
 
 class LoadingHome extends StatelessWidget {
   const LoadingHome({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        SizedBox(height: MediaQuery.paddingOf(context).top),
-        Container(height: 120, decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(28))),
-        const SizedBox(height: 16),
-        Container(height: 220, decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(28))),
-        const SizedBox(height: 16),
-        ...List.generate(4, (_) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Container(height: 90, decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(24))))),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [SizedBox(height: MediaQuery.paddingOf(context).top), skeleton(context, 120), const SizedBox(height: 16), skeleton(context, 220), const SizedBox(height: 16), ...List.generate(5, (_) => Padding(padding: const EdgeInsets.only(bottom: 12), child: skeleton(context, 90)))]);
+  Widget skeleton(BuildContext context, double height) => Container(height: height, decoration: BoxDecoration(color: Theme.of(context).cardTheme.color, borderRadius: BorderRadius.circular(28)));
 }
 
 class ErrorState extends StatelessWidget {
   const ErrorState({required this.message, required this.onRetry, super.key});
   final String message;
   final VoidCallback onRetry;
-
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.wifi_off_rounded, size: 56),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('إعادة المحاولة')),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.wifi_off_rounded, size: 56), const SizedBox(height: 12), Text(message, textAlign: TextAlign.center), const SizedBox(height: 16), FilledButton(onPressed: onRetry, child: const Text('إعادة المحاولة'))])));
 }
 
 class EmptyState extends StatelessWidget {
   const EmptyState({required this.title, required this.subtitle, super.key});
   final String title;
   final String subtitle;
-
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.inventory_2_outlined, size: 64, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 12),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
-            const SizedBox(height: 6),
-            Text(subtitle, textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.inventory_2_outlined, size: 64, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 12), Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)), const SizedBox(height: 6), Text(subtitle, textAlign: TextAlign.center)])));
 }
 
 String money(double value) => '${NumberFormat('#,##0.00', 'ar_EG').format(value)} ج.م';
