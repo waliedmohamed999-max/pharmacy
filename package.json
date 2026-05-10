@@ -5,6 +5,7 @@
     "scripts": {
         "build": "vite build",
         "build:vercel": "vite build && node scripts/build-vercel-static.cjs",
+        "export:vercel-data": "php scripts/export-storefront-static-data.php",
         "dev": "vite"
     },
     "devDependencies": {
