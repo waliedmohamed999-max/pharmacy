@@ -2183,14 +2183,126 @@ class OrderSuccessScreen extends StatelessWidget {
   final Map<String, dynamic> order;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.check_circle, size: 96, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 16), const Text('تم إنشاء الطلب بنجاح', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)), const SizedBox(height: 8), Text('رقم الطلب #${order['id']} - الإجمالي ${money((order['total'] as num?)?.toDouble() ?? 0)}', textAlign: TextAlign.center), const SizedBox(height: 24), FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('العودة للرئيسية'))]),
+  Widget build(BuildContext context) {
+    final total = (order['total'] as num?)?.toDouble() ?? 0;
+    final id = order['id']?.toString() ?? '-';
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.fromLTRB(18, MediaQuery.paddingOf(context).top + 28, 18, 28),
+              decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff064e3b), Color(0xff059669)])),
+              child: Column(
+                children: [
+                  Container(width: 104, height: 104, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), shape: BoxShape.circle), child: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 70)),
+                  const SizedBox(height: 18),
+                  const Text('تم إنشاء الطلب بنجاح', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  Text('تم إرسال طلبك للصيدلية وسيتم التواصل معك للتأكيد.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withValues(alpha: .84), fontWeight: FontWeight.w700, height: 1.6)),
+                ],
+              ),
+            ),
           ),
-        ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: softCard(context),
+                child: Column(
+                  children: [
+                    SuccessInfoRow(icon: Icons.confirmation_number_outlined, label: 'رقم الطلب', value: '#$id'),
+                    const Divider(height: 24),
+                    SuccessInfoRow(icon: Icons.payments_outlined, label: 'الإجمالي', value: money(total)),
+                    const Divider(height: 24),
+                    const SuccessInfoRow(icon: Icons.schedule_outlined, label: 'الحالة', value: 'قيد المراجعة'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: OrderSuccessSteps()),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: SafeArea(
+              minimum: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.home_rounded),
+                    label: const Text('العودة للرئيسية'),
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SuccessInfoRow extends StatelessWidget {
+  const SuccessInfoRow({required this.icon, required this.label, required this.value, super.key});
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          CircleIcon(icon: icon),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label, style: mutedStyle(context, 13))),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        ],
       );
+}
+
+class OrderSuccessSteps extends StatelessWidget {
+  const OrderSuccessSteps({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const steps = [
+      [Icons.receipt_long_outlined, 'استلام الطلب'],
+      [Icons.local_pharmacy_outlined, 'مراجعة صيدلي'],
+      [Icons.phone_in_talk_outlined, 'تأكيد هاتفي'],
+      [Icons.local_shipping_outlined, 'التوصيل'],
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: softCard(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('ماذا يحدث الآن؟', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            const SizedBox(height: 12),
+            for (var i = 0; i < steps.length; i++) ...[
+              Row(
+                children: [
+                  CircleIcon(icon: steps[i][0] as IconData),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(steps[i][1] as String, style: const TextStyle(fontWeight: FontWeight.w900))),
+                ],
+              ),
+              if (i != steps.length - 1)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 22),
+                  child: Container(width: 2, height: 18, color: Theme.of(context).colorScheme.primary.withValues(alpha: .20)),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class SectionBlock extends StatelessWidget {
@@ -2237,7 +2349,18 @@ class QuantityStepper extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [IconButton.filledTonal(onPressed: () => onChanged(value + 1), icon: const Icon(Icons.add)), Text('$value', style: const TextStyle(fontWeight: FontWeight.w900)), IconButton.filledTonal(onPressed: () => onChanged(value - 1), icon: const Icon(Icons.remove))]);
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(18)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(width: 34, height: 34, child: IconButton.filledTonal(onPressed: () => onChanged(value + 1), icon: const Icon(Icons.add, size: 17), padding: EdgeInsets.zero)),
+            SizedBox(width: 34, child: Text('$value', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900))),
+            SizedBox(width: 34, height: 34, child: IconButton.filledTonal(onPressed: () => onChanged(value - 1), icon: const Icon(Icons.remove, size: 17), padding: EdgeInsets.zero)),
+          ],
+        ),
+      );
 }
 
 class CircleIcon extends StatelessWidget {
@@ -2259,8 +2382,20 @@ TextStyle mutedStyle(BuildContext context, double size) => TextStyle(color: Them
 class LoadingHome extends StatelessWidget {
   const LoadingHome({super.key});
   @override
-  Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [SizedBox(height: MediaQuery.paddingOf(context).top), skeleton(context, 120), const SizedBox(height: 16), skeleton(context, 220), const SizedBox(height: 16), ...List.generate(5, (_) => Padding(padding: const EdgeInsets.only(bottom: 12), child: skeleton(context, 90)))]);
-  Widget skeleton(BuildContext context, double height) => Container(height: height, decoration: BoxDecoration(color: Theme.of(context).cardTheme.color, borderRadius: BorderRadius.circular(28)));
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          SizedBox(height: MediaQuery.paddingOf(context).top),
+          Row(children: [skeleton(context, 56, width: 56), const SizedBox(width: 12), Expanded(child: skeleton(context, 56))]),
+          const SizedBox(height: 16),
+          skeleton(context, 230),
+          const SizedBox(height: 16),
+          Row(children: [Expanded(child: skeleton(context, 82)), const SizedBox(width: 10), Expanded(child: skeleton(context, 82))]),
+          const SizedBox(height: 16),
+          ...List.generate(4, (_) => Padding(padding: const EdgeInsets.only(bottom: 12), child: skeleton(context, 96))),
+        ],
+      );
+  Widget skeleton(BuildContext context, double height, {double? width}) => Container(width: width, height: height, decoration: BoxDecoration(color: Theme.of(context).cardTheme.color, borderRadius: BorderRadius.circular(28), border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xff1f2937) : const Color(0xffdbe7ef))));
 }
 
 class ErrorState extends StatelessWidget {
@@ -2268,7 +2403,24 @@ class ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
   @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.wifi_off_rounded, size: 56), const SizedBox(height: 12), Text(message, textAlign: TextAlign.center), const SizedBox(height: 16), FilledButton(onPressed: onRetry, child: const Text('إعادة المحاولة'))])));
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            padding: const EdgeInsets.all(22),
+            decoration: softCard(context),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.wifi_off_rounded, size: 64, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 12),
+              const Text('تعذر الاتصال', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+              const SizedBox(height: 8),
+              Text(message, textAlign: TextAlign.center, style: mutedStyle(context, 13)),
+              const SizedBox(height: 16),
+              FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('إعادة المحاولة')),
+            ]),
+          ),
+        ),
+      );
 }
 
 class EmptyState extends StatelessWidget {
@@ -2276,7 +2428,22 @@ class EmptyState extends StatelessWidget {
   final String title;
   final String subtitle;
   @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.inventory_2_outlined, size: 64, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 12), Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)), const SizedBox(height: 6), Text(subtitle, textAlign: TextAlign.center)])));
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            padding: const EdgeInsets.all(22),
+            decoration: softCard(context),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.inventory_2_outlined, size: 64, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 12),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+              const SizedBox(height: 6),
+              Text(subtitle, textAlign: TextAlign.center, style: mutedStyle(context, 13)),
+            ]),
+          ),
+        ),
+      );
 }
 
 String money(double value) => '${NumberFormat('#,##0.00', 'ar_EG').format(value)} ج.م';
