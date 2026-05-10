@@ -288,7 +288,7 @@ class _ClientShellState extends State<ClientShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      HomeScreen(api: api),
+      HomeScreen(api: api, onToggleTheme: widget.onToggleTheme),
       ProductsScreen(api: api),
       CartScreen(api: api),
       OrdersScreen(api: api),
@@ -313,19 +313,15 @@ class _ClientShellState extends State<ClientShell> {
             const NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'طلباتي'),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: widget.onToggleTheme,
-          icon: const Icon(Icons.dark_mode_outlined),
-          label: const Text('الوضع'),
-        ),
       ),
     );
   }
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({required this.api, super.key});
+  const HomeScreen({required this.api, required this.onToggleTheme, super.key});
   final ApiClient api;
+  final VoidCallback onToggleTheme;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -364,10 +360,12 @@ class _HomeScreenState extends State<HomeScreen> {
           final best = productsFrom(sections['best_sellers']);
           final newest = productsFrom(sections['new_arrivals']);
           final concerns = mapsFrom(sections['concerns']);
+          final cart = CartScope.of(context);
 
           return CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(child: StoreHeader(store: store)),
+              SliverToBoxAdapter(child: StoreHeader(store: store, api: widget.api, onToggleTheme: widget.onToggleTheme)),
+              SliverToBoxAdapter(child: HomeQuickActions(api: widget.api, cart: cart)),
               SliverToBoxAdapter(child: HeroCarousel(banners: banners)),
               const SliverToBoxAdapter(child: TrustBadges()),
               SliverToBoxAdapter(child: CategoryStrip(categories: categories, onTap: (category) => openProducts(context, widget.api, category: category))),
@@ -395,47 +393,108 @@ void openProducts(BuildContext context, ApiClient api, {CategoryItem? category})
 }
 
 class StoreHeader extends StatelessWidget {
-  const StoreHeader({required this.store, super.key});
+  const StoreHeader({required this.store, required this.api, required this.onToggleTheme, super.key});
   final Map<String, dynamic> store;
+  final ApiClient api;
+  final VoidCallback onToggleTheme;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 10, 14, 16),
+      padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 10, 14, 14),
       decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff064e3b), Color(0xff059669)])),
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                height: 52,
-                width: 52,
+                height: 50,
+                width: 50,
                 decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(18)),
-                child: const Icon(Icons.medication_liquid_rounded, color: Colors.white, size: 28),
+                child: const Icon(Icons.medication_liquid_rounded, color: Colors.white, size: 27),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(store['name'] as String? ?? 'صيدلية د. محمد رمضان', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
+                    Text(store['name'] as String? ?? 'صيدلية د. محمد رمضان', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 19)),
                     Text(store['tagline'] as String? ?? 'رعاية موثوقة وتسوق أسرع', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withValues(alpha: .80), fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
               IconButton.filledTonal(
-                onPressed: () {},
-                icon: const Icon(Icons.notifications_none_rounded),
+                onPressed: onToggleTheme,
+                icon: const Icon(Icons.dark_mode_outlined),
                 style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: .14), foregroundColor: Colors.white),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          SearchBox(readOnly: true, onTap: () => openProducts(context, ApiClient())),
+          SearchBox(readOnly: true, onTap: () => openProducts(context, api)),
         ],
       ),
     );
   }
+}
+
+class HomeQuickActions extends StatelessWidget {
+  const HomeQuickActions({required this.api, required this.cart, super.key});
+  final ApiClient api;
+  final CartStore cart;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _HomeAction('المنتجات', Icons.medication_liquid_outlined, () => openProducts(context, api)),
+      _HomeAction('باركود', Icons.qr_code_scanner_rounded, () => openProducts(context, api)),
+      _HomeAction('السلة ${cart.count}', Icons.shopping_cart_checkout_rounded, () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CartScreen(api: api)))),
+      _HomeAction('طلباتي', Icons.receipt_long_outlined, () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => OrdersScreen(api: api)))),
+    ];
+
+    return Container(
+      color: const Color(0xff059669),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+      child: Row(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            Expanded(child: _HomeActionChip(item: items[i])),
+            if (i != items.length - 1) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeAction {
+  const _HomeAction(this.label, this.icon, this.onTap);
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+class _HomeActionChip extends StatelessWidget {
+  const _HomeActionChip({required this.item});
+  final _HomeAction item;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: item.onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 6),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withValues(alpha: .12))),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(item.icon, color: Colors.white, size: 21),
+              const SizedBox(height: 5),
+              Text(item.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
+            ],
+          ),
+        ),
+      );
 }
 
 class SearchBox extends StatelessWidget {
@@ -474,14 +533,14 @@ class HeroCarousel extends StatelessWidget {
         : banners;
 
     return SizedBox(
-      height: 290,
+      height: 260,
       child: PageView.builder(
-        controller: PageController(viewportFraction: .94),
+        controller: PageController(viewportFraction: .93),
         itemCount: items.length,
         itemBuilder: (context, index) {
           final banner = items[index];
           return Container(
-            margin: const EdgeInsets.fromLTRB(6, 16, 6, 10),
+            margin: const EdgeInsets.fromLTRB(6, 14, 6, 8),
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
@@ -497,21 +556,21 @@ class HeroCarousel extends StatelessWidget {
                 const Positioned(left: -50, top: -40, child: CircleBlob(size: 160, opacity: .13)),
                 const Positioned(right: -70, bottom: -80, child: CircleBlob(size: 220, opacity: .10)),
                 Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(18),
                   child: Row(
                     children: [
                       Expanded(
-                        flex: 6,
+                        flex: 7,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const PillLabel(label: 'منتجات أصلية 100%'),
-                            const SizedBox(height: 12),
-                            Text(banner['title'] as String? ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900, height: 1.06)),
+                            const SizedBox(height: 10),
+                            Text(banner['title'] as String? ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 27, fontWeight: FontWeight.w900, height: 1.08)),
                             const SizedBox(height: 8),
-                            Text(banner['subtitle'] as String? ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withValues(alpha: .88), fontWeight: FontWeight.w800, fontSize: 13, height: 1.45)),
-                            const SizedBox(height: 14),
+                            Text(banner['subtitle'] as String? ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withValues(alpha: .88), fontWeight: FontWeight.w800, fontSize: 12, height: 1.45)),
+                            const SizedBox(height: 12),
                             FilledButton(
                               onPressed: () => openProducts(context, ApiClient()),
                               style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xff065f46)),
@@ -562,7 +621,7 @@ class PharmacyVisual extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 150,
+      height: 132,
       decoration: BoxDecoration(color: Colors.white.withValues(alpha: .15), borderRadius: BorderRadius.circular(28)),
       child: Center(
         child: image.isEmpty
@@ -586,7 +645,7 @@ class TrustBadges extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 96,
+      height: 88,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         scrollDirection: Axis.horizontal,
@@ -610,8 +669,8 @@ class InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 180,
-      padding: const EdgeInsets.all(14),
+      width: 168,
+      padding: const EdgeInsets.all(12),
       decoration: softCard(context),
       child: Row(
         children: [
@@ -636,7 +695,7 @@ class CategoryStrip extends StatelessWidget {
       title: 'أقسام الصيدلية',
       action: 'كل الأقسام',
       child: SizedBox(
-        height: 156,
+        height: 148,
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           scrollDirection: Axis.horizontal,
@@ -648,13 +707,13 @@ class CategoryStrip extends StatelessWidget {
               onTap: () => onTap(category),
               borderRadius: BorderRadius.circular(24),
               child: Container(
-                width: 132,
+                width: 124,
                 padding: const EdgeInsets.all(12),
                 decoration: softCard(context),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(width: 58, height: 58, child: AppImage(url: category.image, fit: BoxFit.contain)),
+                    SizedBox(width: 54, height: 54, child: AppImage(url: category.image, fit: BoxFit.contain)),
                     const SizedBox(height: 10),
                     Text(category.name, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, height: 1.2)),
                     Text('${category.count} منتج', style: mutedStyle(context, 11)),
