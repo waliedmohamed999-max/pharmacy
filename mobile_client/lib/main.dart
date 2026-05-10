@@ -723,8 +723,13 @@ class ProductCard extends StatelessWidget {
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(99)), child: Text('${product.discountPercent}%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11))),
+                    child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(99)), child: Text('خصم ${product.discountPercent}%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10))),
                   ),
+                Positioned(
+                  left: 8,
+                  bottom: 8,
+                  child: StockBadge(qty: product.availableQty),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -732,7 +737,9 @@ class ProductCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(product.categoryName.isEmpty ? 'منتج صيدلي' : product.categoryName, maxLines: 1, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 12)),
             const Spacer(),
-            Row(children: [Expanded(child: Text(money(product.price), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 17))), StockBadge(qty: product.availableQty)]),
+            if (product.comparePrice != null && product.comparePrice! > product.price)
+              Text(money(product.comparePrice!), style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontWeight: FontWeight.w800, fontSize: 11)),
+            Text(money(product.price), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18)),
             const SizedBox(height: 10),
             FilledButton.icon(
               onPressed: product.inStock ? () => cart.add(product) : null,
@@ -754,7 +761,7 @@ class StockBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(color: qty > 5 ? Colors.green.withValues(alpha: .10) : Colors.orange.withValues(alpha: .12), borderRadius: BorderRadius.circular(99)),
-        child: Text(qty > 0 ? '$qty' : '0', style: TextStyle(color: qty > 5 ? Colors.green.shade700 : Colors.orange.shade800, fontWeight: FontWeight.w900, fontSize: 11)),
+        child: Text(qty > 0 ? 'متوفر $qty' : 'غير متاح', style: TextStyle(color: qty > 5 ? Colors.green.shade700 : Colors.orange.shade800, fontWeight: FontWeight.w900, fontSize: 10)),
       );
 }
 
@@ -947,6 +954,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
   late Future<List<Product>> productsFuture;
 
   @override
+  void dispose() {
+    search.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     selectedCategory = widget.initialCategory;
@@ -971,10 +984,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   Widget build(BuildContext context) {
     final content = RefreshIndicator(
-      onRefresh: () async => reload(),
+      onRefresh: () {
+        final nextFuture = loadProducts();
+        setState(() => productsFuture = nextFuture);
+        return nextFuture;
+      },
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: ProductsHeader(search: search, onSearch: (_) => reload(), grid: grid, onToggleGrid: () => setState(() => grid = !grid))),
+          SliverToBoxAdapter(child: ProductsHeader(search: search, onSearch: (_) => reload(), grid: grid, onToggleGrid: () => setState(() => grid = !grid), selectedCategory: selectedCategory)),
           SliverToBoxAdapter(child: FilterPanel(categoriesFuture: categoriesFuture, selected: selectedCategory, sort: sort, inStockOnly: inStockOnly, onCategory: (value) => setState(() { selectedCategory = value; productsFuture = loadProducts(); }), onSort: (value) => setState(() { sort = value; productsFuture = loadProducts(); }), onStock: (value) => setState(() { inStockOnly = value; productsFuture = loadProducts(); }))),
           FutureSliverProducts(future: productsFuture, grid: grid, api: widget.api),
           const SliverToBoxAdapter(child: SizedBox(height: 96)),
@@ -988,23 +1005,67 @@ class _ProductsScreenState extends State<ProductsScreen> {
 }
 
 class ProductsHeader extends StatelessWidget {
-  const ProductsHeader({required this.search, required this.onSearch, required this.grid, required this.onToggleGrid, super.key});
+  const ProductsHeader({required this.search, required this.onSearch, required this.grid, required this.onToggleGrid, required this.selectedCategory, super.key});
   final TextEditingController search;
   final ValueChanged<String> onSearch;
   final bool grid;
   final VoidCallback onToggleGrid;
+  final CategoryItem? selectedCategory;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 10, 14, 10),
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 12, 14, 16),
+        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff064e3b), Color(0xff059669)])),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [Expanded(child: Text('كل المنتجات', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900))), IconButton.filledTonal(onPressed: onToggleGrid, icon: Icon(grid ? Icons.view_list : Icons.grid_view))]),
-            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(width: 52, height: 52, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(18)), child: const Icon(Icons.medication_liquid_rounded, color: Colors.white)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(selectedCategory?.name ?? 'كل المنتجات', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 27)),
+                      Text('أدوية، فيتامينات، عناية ومنتجات صحية موثوقة.', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withValues(alpha: .82), fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
+                IconButton.filledTonal(
+                  onPressed: onToggleGrid,
+                  icon: Icon(grid ? Icons.view_list_rounded : Icons.grid_view_rounded),
+                  style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: .16), foregroundColor: Colors.white),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
             SearchBox(controller: search, onChanged: onSearch),
+            const SizedBox(height: 12),
+            const Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ProductTrustPill(icon: Icons.verified_user_outlined, label: 'منتجات أصلية'),
+                ProductTrustPill(icon: Icons.inventory_2_outlined, label: 'مخزون مباشر'),
+                ProductTrustPill(icon: Icons.local_shipping_outlined, label: 'توصيل سريع'),
+              ],
+            ),
           ],
         ),
+      );
+}
+
+class ProductTrustPill extends StatelessWidget {
+  const ProductTrustPill({required this.icon, required this.label, super.key});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+        decoration: BoxDecoration(color: Colors.white.withValues(alpha: .15), borderRadius: BorderRadius.circular(99)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, color: Colors.white, size: 16), const SizedBox(width: 6), Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12))]),
       );
 }
 
@@ -1020,7 +1081,7 @@ class FilterPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
         child: Column(
           children: [
             FutureBuilder<List<CategoryItem>>(
@@ -1028,7 +1089,7 @@ class FilterPanel extends StatelessWidget {
               builder: (context, snapshot) {
                 final categories = snapshot.data ?? [];
                 return SizedBox(
-                  height: 48,
+                  height: 46,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
@@ -1039,13 +1100,13 @@ class FilterPanel extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     initialValue: sort,
-                    decoration: const InputDecoration(labelText: 'الترتيب'),
+                    decoration: const InputDecoration(labelText: 'ترتيب المنتجات', prefixIcon: Icon(Icons.sort_rounded)),
                     items: const [
                       DropdownMenuItem(value: 'newest', child: Text('الأحدث')),
                       DropdownMenuItem(value: 'price_asc', child: Text('الأقل سعرا')),
@@ -1056,7 +1117,7 @@ class FilterPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                FilterChip(label: const Text('متوفر فقط'), selected: inStockOnly, onSelected: onStock),
+                FilterChip(showCheckmark: true, avatar: const Icon(Icons.inventory_2_outlined, size: 18), label: const Text('متوفر فقط'), selected: inStockOnly, onSelected: onStock),
               ],
             ),
           ],
@@ -1075,29 +1136,48 @@ class FutureSliverProducts extends StatelessWidget {
     return FutureBuilder<List<Product>>(
       future: future,
       builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) return const SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
+        if (snapshot.connectionState != ConnectionState.done) return const SliverFillRemaining(child: ProductsLoadingState());
         if (snapshot.hasError) return SliverFillRemaining(child: ErrorState(message: snapshot.error.toString(), onRetry: () {}));
         final products = snapshot.data ?? [];
         if (products.isEmpty) return const SliverFillRemaining(child: EmptyState(title: 'لا توجد منتجات', subtitle: 'جرب تغيير الفلاتر أو البحث باسم آخر.'));
 
         if (!grid) {
-          return SliverList.separated(
-            itemCount: products.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) => Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: ProductListTile(product: products[index], api: api)),
+          return SliverPadding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            sliver: SliverList.separated(
+              itemCount: products.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (context, index) => ProductListTile(product: products[index], api: api),
+            ),
           );
         }
 
         return SliverPadding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
           sliver: SliverGrid(
             delegate: SliverChildBuilderDelegate((context, index) => ProductCard(product: products[index]), childCount: products.length),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: .58),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: .54),
           ),
         );
       },
     );
   }
+}
+
+class ProductsLoadingState extends StatelessWidget {
+  const ProductsLoadingState({super.key});
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 14),
+            const Text('جاري تحميل منتجات الصيدلية...', style: TextStyle(fontWeight: FontWeight.w900)),
+          ],
+        ),
+      );
 }
 
 class ProductListTile extends StatelessWidget {
