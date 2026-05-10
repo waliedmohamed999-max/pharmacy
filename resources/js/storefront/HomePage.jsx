@@ -624,6 +624,128 @@ function AllProductsCta({ routes }) {
     );
 }
 
+function StorefrontFooter({ routes }) {
+    const trustItems = [
+        [ShieldCheck, 'منتجات أصلية', 'مصادر موثوقة ومراجعة'],
+        [Truck, 'توصيل سريع', 'خلال 24-48 ساعة'],
+        [CreditCard, 'دفع آمن', 'حماية كاملة للطلب'],
+        [PhoneCall, 'دعم مستمر', '0509095816'],
+    ];
+
+    const linkGroups = [
+        {
+            title: 'روابط التسوق',
+            links: [
+                ['الرئيسية', routes.home],
+                ['كل المنتجات', routes.products],
+                ['العروض', routes.products],
+                ['السلة', routes.cart],
+            ],
+        },
+        {
+            title: 'أقسام الصيدلية',
+            links: [
+                ['الأدوية والروشتات', routes.products],
+                ['الفيتامينات والمكملات', routes.products],
+                ['العناية بالبشرة', routes.products],
+                ['الأم والطفل', routes.products],
+            ],
+        },
+        {
+            title: 'خدمة العملاء',
+            links: [
+                ['حسابي', routes.login],
+                ['تتبع الطلب', routes.cart],
+                ['سياسة الاستبدال', routes.home],
+                ['الدعم والمساعدة', routes.home],
+            ],
+        },
+    ];
+
+    return (
+        <footer className="mt-16 overflow-hidden bg-slate-950 text-white">
+            <div className="relative">
+                <div className="absolute -right-28 top-0 h-80 w-80 rounded-full bg-medical-500/20 blur-3xl" />
+                <div className="absolute -left-28 bottom-0 h-80 w-80 rounded-full bg-teal-400/10 blur-3xl" />
+                <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+                    <div className="grid gap-3 rounded-[2rem] border border-white/10 bg-white/[0.04] p-3 shadow-2xl shadow-slate-950/30 sm:grid-cols-2 lg:grid-cols-4">
+                        {trustItems.map(([Icon, title, description]) => (
+                            <div key={title} className="flex items-center gap-3 rounded-[1.5rem] bg-white/[0.05] p-4 ring-1 ring-white/10 transition hover:bg-white/[0.08]">
+                                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-300">
+                                    <Icon size={22} />
+                                </span>
+                                <span>
+                                    <span className="block text-sm font-black">{title}</span>
+                                    <span className="mt-1 block text-xs font-semibold text-slate-400">{description}</span>
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="grid gap-8 py-12 lg:grid-cols-[1.2fr_2fr_1fr]">
+                        <div>
+                            <a href={routes.home} className="inline-flex items-center gap-3 text-2xl font-black">
+                                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-medical-600 text-white shadow-xl shadow-medical-900/30">
+                                    <Pill size={25} />
+                                </span>
+                                صيدلية د. محمد رمضان
+                            </a>
+                            <p className="mt-5 max-w-sm text-sm font-semibold leading-8 text-slate-400">
+                                صيدلية إلكترونية حديثة توفر أدوية ومنتجات عناية صحية موثوقة، مع تجربة شراء سريعة ودفع آمن وتوصيل موثوق.
+                            </p>
+                            <div className="mt-6 flex flex-wrap gap-2">
+                                {['مرخصة', 'دفع آمن', 'شحن موثوق'].map((item) => (
+                                    <span key={item} className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-black text-emerald-200">
+                                        {item}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="grid gap-7 sm:grid-cols-3">
+                            {linkGroups.map((group) => (
+                                <div key={group.title}>
+                                    <h3 className="text-base font-black text-white">{group.title}</h3>
+                                    <div className="mt-4 space-y-3 text-sm font-semibold text-slate-400">
+                                        {group.links.map(([label, href]) => (
+                                            <a key={label} className="block transition hover:translate-x-[-4px] hover:text-emerald-200" href={href}>
+                                                {label}
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="rounded-[2rem] border border-white/10 bg-white/[0.05] p-5">
+                            <h3 className="text-lg font-black">النشرة الإخبارية</h3>
+                            <p className="mt-2 text-sm font-semibold leading-7 text-slate-400">
+                                اشترك ليصلك جديد العروض والمنتجات الصحية.
+                            </p>
+                            <form onSubmit={(event) => event.preventDefault()} className="mt-5 flex gap-2 rounded-2xl bg-white p-2">
+                                <input type="email" aria-label="البريد الإلكتروني" placeholder="البريد الإلكتروني" className="min-w-0 flex-1 rounded-xl px-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400" />
+                                <button className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-amber-300">
+                                    اشتراك
+                                </button>
+                            </form>
+                            <div className="mt-5 flex items-center justify-between rounded-2xl bg-slate-900/80 p-3 text-xs font-black text-slate-300">
+                                <span>وسائل الدفع</span>
+                                <span className="flex items-center gap-2 text-emerald-200">
+                                    <CreditCard size={18} />
+                                    Cash / Visa
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="relative border-t border-white/10">
+                    <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-center text-xs font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:text-start">
+                        <span>© {new Date().getFullYear()} صيدلية د. محمد رمضان. جميع الحقوق محفوظة.</span>
+                        <span>تجربة صيدلية رقمية موثوقة - دفع آمن وشحن سريع</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    );
+}
+
 function Footer({ routes }) {
     return (
         <footer className="mt-10 bg-slate-950 text-white">
@@ -769,7 +891,7 @@ function HomePage({ initialPayload }) {
             <Header payload={payload} />
             <MegaNav products={payload.products} routes={payload.routes} />
             {sectionList.map(renderSection)}
-            <Footer routes={payload.routes} />
+            <StorefrontFooter routes={payload.routes} />
             <PreviewModal routes={payload.routes} />
             <MobileBottomNav routes={payload.routes} />
         </div>
