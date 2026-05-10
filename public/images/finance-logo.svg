@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="96" viewBox="0 0 320 96" role="img" aria-label="Finance Logo">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f766e"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="316" height="92" rx="18" fill="#f8fafc" stroke="#cbd5e1"/>
+  <g transform="translate(20,18)">
+    <rect width="58" height="58" rx="14" fill="url(#g)"/>
+    <path d="M14 41h30M18 33V25M29 33V20M40 33v-8" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <text x="92" y="41" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" fill="#0f172a">النظام المالي</text>
+  <text x="92" y="66" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" fill="#475569">Finance &amp; Accounting</text>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="520" viewBox="0 0 1400 520">
+  <rect width="1400" height="520" fill="#1d4ed8"/>
+  <path d="M0 420 C240 320 420 520 680 390 C910 274 1100 290 1400 150 L1400 520 L0 520Z" fill="#38bdf8" opacity=".35"/>
+  <circle cx="260" cy="210" r="150" fill="#ffffff" opacity=".16"/>
+  <rect x="160" y="120" width="190" height="250" rx="30" fill="#ffffff"/>
+  <rect x="205" y="170" width="100" height="32" rx="16" fill="#1d4ed8"/>
+  <rect x="205" y="225" width="100" height="100" rx="22" fill="#bfdbfe"/>
+  <text x="1240" y="185" text-anchor="end" fill="#ffffff" font-family="Arial" font-size="62" font-weight="700">وصلنا حديثا</text>
+  <text x="1240" y="265" text-anchor="end" fill="#dbeafe" font-family="Arial" font-size="38">منتجات يومية وأساسية</text>
+  <text x="1240" y="345" text-anchor="end" fill="#ffffff" font-family="Arial" font-size="44" font-weight="700">تسوق الآن</text>
+</svg>

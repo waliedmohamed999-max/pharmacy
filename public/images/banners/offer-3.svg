@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="520" viewBox="0 0 1400 520">
+  <rect width="1400" height="520" fill="#7c2d12"/>
+  <rect x="0" y="0" width="1400" height="520" fill="#f97316" opacity=".28"/>
+  <circle cx="1100" cy="260" r="310" fill="#fed7aa" opacity=".20"/>
+  <rect x="130" y="145" width="360" height="220" rx="34" fill="#fff7ed"/>
+  <path d="M220 270 h180" stroke="#ea580c" stroke-width="34" stroke-linecap="round"/>
+  <path d="M310 180 v180" stroke="#ea580c" stroke-width="34" stroke-linecap="round"/>
+  <text x="1240" y="185" text-anchor="end" fill="#ffffff" font-family="Arial" font-size="62" font-weight="700">احتياجات الأسرة</text>
+  <text x="1240" y="265" text-anchor="end" fill="#ffedd5" font-family="Arial" font-size="38">أطفال، فيتامينات، عناية يومية</text>
+  <text x="1240" y="345" text-anchor="end" fill="#ffffff" font-family="Arial" font-size="44" font-weight="700">اختيارات مميزة</text>
+</svg>
