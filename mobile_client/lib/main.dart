@@ -1377,59 +1377,268 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Future<List<OrderSummary>>? future;
 
   @override
+  void dispose() {
+    phone.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('طلباتي')),
-      body: Column(
+      body: RefreshIndicator(
+        onRefresh: () async => load(),
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: OrdersHero(phone: phone, onSearch: load)),
+            const SliverToBoxAdapter(child: OrdersStatusGuide()),
+            if (future == null)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: OrdersPrompt(onBrowse: () => openProducts(context, widget.api)),
+              )
+            else
+              FutureBuilder<List<OrderSummary>>(
+                future: future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
+                  }
+                  if (snapshot.hasError) {
+                    return SliverFillRemaining(child: ErrorState(message: snapshot.error.toString(), onRetry: load));
+                  }
+                  final orders = snapshot.data ?? [];
+                  if (orders.isEmpty) {
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: OrdersEmpty(onBrowse: () => openProducts(context, widget.api)),
+                    );
+                  }
+                  return SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(14, 4, 14, 96),
+                    sliver: SliverList.separated(
+                      itemCount: orders.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) => OrderCard(order: orders[index]),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> load() async {
+    final value = phone.text.trim();
+    if (value.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب رقم الجوال أولا')));
+      return;
+    }
+    final nextFuture = widget.api.getJson('/orders', {'phone': value}).then((json) => (json['data'] as List).map((e) => OrderSummary.fromJson(e as Map<String, dynamic>)).toList());
+    setState(() => future = nextFuture);
+    await nextFuture;
+  }
+}
+
+class OrdersHero extends StatelessWidget {
+  const OrdersHero({required this.phone, required this.onSearch, super.key});
+  final TextEditingController phone;
+  final Future<void> Function() onSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 12, 14, 18),
+      decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff064e3b), Color(0xff059669)])),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: phone,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(labelText: 'رقم الجوال', prefixIcon: const Icon(Icons.phone), suffixIcon: IconButton(icon: const Icon(Icons.search), onPressed: load)),
-              onSubmitted: (_) => load(),
+          Row(
+            children: [
+              Container(width: 50, height: 50, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(18)), child: const Icon(Icons.receipt_long_rounded, color: Colors.white)),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('طلباتي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 28)), Text('تابع حالة طلباتك من الصيدلية لحظة بلحظة.', style: TextStyle(color: Colors.white.withValues(alpha: .82), fontWeight: FontWeight.w700))])),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(26)),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: phone,
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => onSearch(),
+                    decoration: const InputDecoration(hintText: 'اكتب رقم الجوال لتتبع الطلبات', prefixIcon: Icon(Icons.phone_iphone_rounded)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.icon(onPressed: onSearch, icon: const Icon(Icons.search_rounded), label: const Text('تتبع')),
+              ],
             ),
           ),
-          Expanded(
-            child: future == null
-                ? const EmptyState(title: 'تتبع الطلبات', subtitle: 'اكتب رقم الجوال لعرض طلباتك وحالة كل طلب.')
-                : FutureBuilder<List<OrderSummary>>(
-                    future: future,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-                      if (snapshot.hasError) return ErrorState(message: snapshot.error.toString(), onRetry: load);
-                      final orders = snapshot.data ?? [];
-                      if (orders.isEmpty) return const EmptyState(title: 'لا توجد طلبات', subtitle: 'لا توجد طلبات مسجلة لهذا الرقم.');
-                      return ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: orders.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) => OrderCard(order: orders[index]),
-                      );
-                    },
-                  ),
+          const SizedBox(height: 12),
+          const Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OrderTrustPill(icon: Icons.verified_user_outlined, label: 'تحقق آمن'),
+              OrderTrustPill(icon: Icons.local_shipping_outlined, label: 'تحديثات التوصيل'),
+              OrderTrustPill(icon: Icons.support_agent_outlined, label: 'دعم الصيدلية'),
+            ],
           ),
         ],
       ),
     );
   }
+}
 
-  void load() {
-    final value = phone.text.trim();
-    if (value.isEmpty) return;
-    setState(() => future = widget.api.getJson('/orders', {'phone': value}).then((json) => (json['data'] as List).map((e) => OrderSummary.fromJson(e as Map<String, dynamic>)).toList()));
-  }
+class OrderTrustPill extends StatelessWidget {
+  const OrderTrustPill({required this.icon, required this.label, super.key});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+        decoration: BoxDecoration(color: Colors.white.withValues(alpha: .15), borderRadius: BorderRadius.circular(99)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, color: Colors.white, size: 16), const SizedBox(width: 6), Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12))]),
+      );
+}
+
+class OrdersStatusGuide extends StatelessWidget {
+  const OrdersStatusGuide({super.key});
+  final steps = const [
+    [Icons.inventory_2_outlined, 'استلام'],
+    [Icons.medication_outlined, 'تحضير'],
+    [Icons.local_shipping_outlined, 'توصيل'],
+    [Icons.check_circle_outline, 'اكتمل'],
+  ];
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: softCard(context),
+          child: Row(
+            children: [
+              for (var i = 0; i < steps.length; i++) ...[
+                Expanded(
+                  child: Column(
+                    children: [
+                      CircleIcon(icon: steps[i][0] as IconData),
+                      const SizedBox(height: 6),
+                      Text(steps[i][1] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                ),
+                if (i != steps.length - 1) Container(width: 18, height: 2, color: Theme.of(context).colorScheme.primary.withValues(alpha: .25)),
+              ],
+            ],
+          ),
+        ),
+      );
+}
+
+class OrdersPrompt extends StatelessWidget {
+  const OrdersPrompt({required this.onBrowse, super.key});
+  final VoidCallback onBrowse;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.manage_search_rounded, size: 82, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 14),
+            const Text('ابدأ بتتبع طلبك', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Text('اكتب رقم الجوال المستخدم في الطلب لعرض كل الطلبات والحالة الحالية.', textAlign: TextAlign.center, style: mutedStyle(context, 14)),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(onPressed: onBrowse, icon: const Icon(Icons.add_shopping_cart_rounded), label: const Text('تسوق الآن')),
+          ]),
+        ),
+      );
+}
+
+class OrdersEmpty extends StatelessWidget {
+  const OrdersEmpty({required this.onBrowse, super.key});
+  final VoidCallback onBrowse;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.assignment_late_outlined, size: 82, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 14),
+            const Text('لا توجد طلبات لهذا الرقم', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Text('تأكد من رقم الجوال أو ابدأ طلب جديد من منتجات الصيدلية.', textAlign: TextAlign.center, style: mutedStyle(context, 14)),
+            const SizedBox(height: 18),
+            FilledButton.icon(onPressed: onBrowse, icon: const Icon(Icons.medication_liquid_outlined), label: const Text('تصفح المنتجات')),
+          ]),
+        ),
+      );
 }
 
 class OrderCard extends StatelessWidget {
   const OrderCard({required this.order, super.key});
   final OrderSummary order;
+
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(16),
         decoration: softCard(context),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Expanded(child: Text('طلب #${order.id}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18))), StatusChip(status: order.status)]), const SizedBox(height: 10), Text(order.createdAt, style: mutedStyle(context, 12)), const SizedBox(height: 8), Row(children: [Expanded(child: Text('${order.items.length} بند', style: mutedStyle(context, 13))), Text(money(order.total), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18))])]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [Expanded(child: Text('طلب #${order.id}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 19))), StatusChip(status: order.status)]),
+            const SizedBox(height: 12),
+            Row(children: [Icon(Icons.calendar_today_outlined, size: 16, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Text(order.createdAt, style: mutedStyle(context, 12))]),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(value: orderProgress(order.status), minHeight: 8, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: .10)),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: OrderMetric(icon: Icons.shopping_bag_outlined, label: 'البنود', value: '${order.items.length}')),
+                const SizedBox(width: 8),
+                Expanded(child: OrderMetric(icon: Icons.payments_outlined, label: 'الإجمالي', value: money(order.total))),
+              ],
+            ),
+          ],
+        ),
+      );
+}
+
+double orderProgress(String status) => switch (status) {
+      'new' => .25,
+      'preparing' || 'processing' => .50,
+      'shipped' => .75,
+      'completed' || 'delivered' => 1,
+      'cancelled' => .10,
+      _ => .25,
+    };
+
+class OrderMetric extends StatelessWidget {
+  const OrderMetric({required this.icon, required this.label, required this.value, super.key});
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .06), borderRadius: BorderRadius.circular(18)),
+        child: Row(children: [Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 8), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: mutedStyle(context, 11)), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900))]))]),
       );
 }
 
@@ -1438,8 +1647,9 @@ class StatusChip extends StatelessWidget {
   final String status;
   @override
   Widget build(BuildContext context) {
-    final color = switch (status) { 'new' => Colors.blue, 'preparing' => Colors.orange, 'shipped' => Colors.purple, 'completed' => Colors.green, 'cancelled' => Colors.red, _ => Colors.grey };
-    return Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(99)), child: Text(status, style: TextStyle(color: color.shade700, fontWeight: FontWeight.w900, fontSize: 12)));
+    final color = switch (status) { 'new' => Colors.blue, 'preparing' || 'processing' => Colors.orange, 'shipped' => Colors.purple, 'completed' || 'delivered' => Colors.green, 'cancelled' => Colors.red, _ => Colors.grey };
+    final label = switch (status) { 'new' => 'جديد', 'preparing' || 'processing' => 'قيد التحضير', 'shipped' => 'قيد التوصيل', 'completed' || 'delivered' => 'مكتمل', 'cancelled' => 'ملغي', _ => status };
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(99)), child: Text(label, style: TextStyle(color: color.shade700, fontWeight: FontWeight.w900, fontSize: 12)));
   }
 }
 
