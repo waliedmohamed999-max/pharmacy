@@ -338,7 +338,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: () async => setState(() => future = widget.api.getJson('/home')),
+      onRefresh: () {
+        final nextFuture = widget.api.getJson('/home');
+        setState(() => future = nextFuture);
+        return nextFuture;
+      },
       child: FutureBuilder<Map<String, dynamic>>(
         future: future,
         builder: (context, snapshot) {
@@ -368,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(child: ProductRail(title: 'وصل حديثا', products: newest)),
               const SliverToBoxAdapter(child: BrandCarousel()),
               SliverToBoxAdapter(child: ConcernGrid(concerns: concerns)),
-              const SliverToBoxAdapter(child: AppDownloadBanner()),
+              SliverToBoxAdapter(child: PharmacyToolsHub(api: widget.api)),
               const SliverToBoxAdapter(child: SizedBox(height: 96)),
             ],
           );
@@ -806,20 +810,111 @@ class ConcernGrid extends StatelessWidget {
   }
 }
 
-class AppDownloadBanner extends StatelessWidget {
-  const AppDownloadBanner({super.key});
+class PharmacyToolsHub extends StatelessWidget {
+  const PharmacyToolsHub({required this.api, super.key});
+  final ApiClient api;
+
+  void _comingSoon(BuildContext context, String title) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$title قيد التجهيز')));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 22, 14, 0),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), gradient: const LinearGradient(colors: [Color(0xff052e2b), Color(0xff0f766e)])),
-        child: Row(
+    final tools = [
+      _PharmacyTool('كل المنتجات', 'تصفح الصيدلية كاملة', Icons.medication_liquid_outlined, const Color(0xff059669), () => openProducts(context, api)),
+      _PharmacyTool('تتبع الطلب', 'اعرف حالة طلبك بالجوال', Icons.receipt_long_outlined, const Color(0xff0ea5e9), () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => OrdersScreen(api: api)))),
+      _PharmacyTool('سلة الشراء', 'راجع المنتجات والدفع', Icons.shopping_cart_checkout_rounded, const Color(0xfff59e0b), () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CartScreen(api: api)))),
+      _PharmacyTool('مسح باركود', 'ابحث عن المنتج بسرعة', Icons.qr_code_scanner_rounded, const Color(0xff7c3aed), () => openProducts(context, api)),
+      _PharmacyTool('رفع روشتة', 'مراجعة صيدلي قبل الطلب', Icons.upload_file_rounded, const Color(0xffe11d48), () => _comingSoon(context, 'رفع الروشتة')),
+      _PharmacyTool('دعم سريع', 'مساعدة مباشرة للطلب', Icons.support_agent_rounded, const Color(0xff0f766e), () => _comingSoon(context, 'الدعم السريع')),
+    ];
+
+    return SectionBlock(
+      title: 'أدوات الصيدلية',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Column(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('تطبيق الصيدلية', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w900)), const SizedBox(height: 8), const Text('اطلب أدويتك أسرع', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 27)), const SizedBox(height: 10), Text('تنبيهات للطلبات وسهولة متابعة السلة والدفع.', style: TextStyle(color: Colors.white.withValues(alpha: .75), fontWeight: FontWeight.w700))])),
-            Container(width: 96, height: 160, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)), child: const Icon(Icons.phone_iphone, color: Color(0xff059669), size: 58)),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: const LinearGradient(colors: [Color(0xff064e3b), Color(0xff0f766e), Color(0xff14b8a6)]),
+                boxShadow: [BoxShadow(color: const Color(0xff059669).withValues(alpha: .18), blurRadius: 28, offset: const Offset(0, 14))],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(18)),
+                    child: const Icon(Icons.local_pharmacy_rounded, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('خدمات أسرع داخل التطبيق', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                        const SizedBox(height: 5),
+                        Text('اختصارات ذكية للشراء، التتبع، الباركود، والروشتات.', style: TextStyle(color: Colors.white.withValues(alpha: .82), fontWeight: FontWeight.w700, height: 1.5)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 1.42),
+              itemCount: tools.length,
+              itemBuilder: (context, index) => _ToolCard(tool: tools[index]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PharmacyTool {
+  const _PharmacyTool(this.title, this.subtitle, this.icon, this.color, this.onTap);
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+}
+
+class _ToolCard extends StatelessWidget {
+  const _ToolCard({required this.tool});
+  final _PharmacyTool tool;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: tool.onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: softCard(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: tool.color.withValues(alpha: .12), borderRadius: BorderRadius.circular(16)),
+              child: Icon(tool.icon, color: tool.color, size: 25),
+            ),
+            const SizedBox(height: 12),
+            Text(tool.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+            const SizedBox(height: 3),
+            Text(tool.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 12)),
           ],
         ),
       ),
