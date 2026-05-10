@@ -817,20 +817,163 @@ class AppDownloadBanner extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Container(
-            width: 92,
-            height: 150,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), border: Border.all(color: Colors.white.withValues(alpha: .4), width: 5)),
-            child: Column(
-              children: [
-                Container(height: 26, decoration: BoxDecoration(color: const Color(0xffd1fae5), borderRadius: BorderRadius.circular(10))),
-                const SizedBox(height: 8),
-                Expanded(child: Container(decoration: BoxDecoration(color: const Color(0xffecfeff), borderRadius: BorderRadius.circular(14)))),
-                const SizedBox(height: 8),
-                Container(height: 18, decoration: BoxDecoration(color: const Color(0xff059669), borderRadius: BorderRadius.circular(99))),
-              ],
+            width: 112,
+            height: 186,
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: const Color(0xff020617),
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .22), blurRadius: 24, offset: const Offset(0, 14))],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(25),
+              child: Container(
+                color: const Color(0xfff4f8fb),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(7, 9, 7, 7),
+                      decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff065f46), Color(0xff10b981)])),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(width: 18, height: 18, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .18), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.medical_services, color: Colors.white, size: 11)),
+                              const SizedBox(width: 5),
+                              const Expanded(child: Text('صيدلية د. محمد رمضان', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white, fontSize: 6.5, fontWeight: FontWeight.w900))),
+                            ],
+                          ),
+                          const SizedBox(height: 7),
+                          Container(height: 17, alignment: Alignment.centerRight, padding: const EdgeInsets.symmetric(horizontal: 7), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)), child: const Text('ابحث عن منتج صحي', style: TextStyle(color: Colors.grey, fontSize: 5.5, fontWeight: FontWeight.w800))),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Container(
+                              height: 58,
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), gradient: const LinearGradient(colors: [Color(0xff065f46), Color(0xff34d399)])),
+                              child: const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('منتجات أصلية 100%', style: TextStyle(color: Colors.white, fontSize: 5.5, fontWeight: FontWeight.w900)),
+                                  SizedBox(height: 3),
+                                  Text('عروض الصيدلية', maxLines: 1, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, height: 1)),
+                                  Spacer(),
+                                  Icon(Icons.medication_liquid, color: Colors.white, size: 18),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Row(children: [
+                              Expanded(child: _MiniAppPill(label: 'أصلية', icon: Icons.verified_user_outlined)),
+                              SizedBox(width: 5),
+                              Expanded(child: _MiniAppPill(label: 'توصيل', icon: Icons.local_shipping_outlined)),
+                            ]),
+                            const SizedBox(height: 6),
+                            const Align(alignment: Alignment.centerRight, child: Text('أقسام الصيدلية', style: TextStyle(fontSize: 7, fontWeight: FontWeight.w900))),
+                            const SizedBox(height: 5),
+                            const Row(children: [
+                              Expanded(child: _MiniCategory(label: 'أدوية')),
+                              SizedBox(width: 5),
+                              Expanded(child: _MiniCategory(label: 'بشرة')),
+                              SizedBox(width: 5),
+                              Expanded(child: _MiniCategory(label: 'طفل')),
+                            ]),
+                            const SizedBox(height: 6),
+                            const Expanded(
+                              child: Row(children: [
+                                Expanded(child: _MiniProduct()),
+                                SizedBox(width: 5),
+                                Expanded(child: _MiniProduct(price: '69 ج.م')),
+                              ]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniAppPill extends StatelessWidget {
+  const _MiniAppPill({required this.label, required this.icon});
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 9, color: const Color(0xff047857)),
+          const SizedBox(width: 3),
+          Flexible(child: Text(label, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 5.5, fontWeight: FontWeight.w900))),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniCategory extends StatelessWidget {
+  const _MiniCategory({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 34,
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(11)),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.medical_services, color: Color(0xff047857), size: 13),
+          const SizedBox(height: 2),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 5.5, fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniProduct extends StatelessWidget {
+  const _MiniProduct({this.price = '48 ج.م'});
+  final String price;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(color: const Color(0xffecfdf5), borderRadius: BorderRadius.circular(9)),
+              child: const Icon(Icons.medication_liquid, color: Color(0xff047857), size: 15),
+            ),
+          ),
+          const SizedBox(height: 3),
+          const Text('منتج صيدلي', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 5.5, fontWeight: FontWeight.w900)),
+          Text(price, maxLines: 1, style: const TextStyle(fontSize: 6, fontWeight: FontWeight.w900, color: Color(0xff04799b))),
         ],
       ),
     );

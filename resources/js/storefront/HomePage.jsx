@@ -501,10 +501,85 @@ function AppBanner() {
                     </div>
                 </div>
                 <div className="mt-8 flex justify-center md:mt-0">
-                    <div className="h-[320px] w-[190px] rounded-[2.5rem] border-8 border-slate-900 bg-white p-3 shadow-2xl">
-                        <div className="h-full rounded-[1.8rem] bg-gradient-to-b from-medical-50 to-white p-3">
-                            <div className="mb-5 h-8 rounded-2xl bg-medical-600" />
-                            <div className="space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-12 rounded-2xl bg-slate-100" />)}</div>
+                    <div className="relative">
+                        <div className="absolute -inset-8 rounded-full bg-emerald-400/20 blur-3xl" />
+                        <div className="relative h-[360px] w-[210px] overflow-hidden rounded-[2.7rem] border-[10px] border-slate-950 bg-slate-950 p-2 shadow-2xl shadow-slate-950/35">
+                            <div className="h-full overflow-hidden rounded-[2rem] bg-slate-50 text-slate-950">
+                                <div className="bg-gradient-to-br from-medical-800 to-emerald-600 px-3 pb-3 pt-4 text-white">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="grid h-8 w-8 place-items-center rounded-2xl bg-white/15">
+                                            <Pill size={17} />
+                                        </div>
+                                        <div className="min-w-0 flex-1 text-right">
+                                            <div className="truncate text-[11px] font-black">صيدلية د. محمد رمضان</div>
+                                            <div className="truncate text-[8px] font-bold text-white/75">رعاية موثوقة وتسوق أسرع</div>
+                                        </div>
+                                        <div className="grid h-7 w-7 place-items-center rounded-xl bg-white/15">
+                                            <Bell size={13} />
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 flex h-8 items-center gap-2 rounded-2xl bg-white px-3 text-[8px] font-bold text-slate-500">
+                                        <Search size={12} />
+                                        ابحث عن دواء أو منتج صحي
+                                    </div>
+                                </div>
+
+                                <div className="p-3">
+                                    <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-medical-800 via-emerald-600 to-teal-400 p-3 text-white">
+                                        <div className="text-[7px] font-black text-white/80">منتجات أصلية 100%</div>
+                                        <div className="mt-1 text-[19px] font-black leading-tight">عروض الصيدلية</div>
+                                        <div className="mt-1 text-[8px] font-bold leading-4 text-white/80">خصومات على منتجات العناية والصحة</div>
+                                        <div className="mt-3 grid h-16 place-items-center rounded-2xl bg-white/15">
+                                            <div className="h-10 w-14 rounded-xl bg-white shadow-lg">
+                                                <div className="mx-auto mt-3 h-2 w-9 rounded-full bg-medical-700" />
+                                                <div className="mx-auto mt-2 h-1.5 w-7 rounded-full bg-teal-300" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-2 grid grid-cols-2 gap-2">
+                                        {[
+                                            [ShieldCheck, 'أصلية'],
+                                            [Truck, 'توصيل'],
+                                        ].map(([Icon, label]) => (
+                                            <div key={label} className="flex items-center gap-1 rounded-2xl bg-white p-2 shadow-sm">
+                                                <div className="grid h-6 w-6 place-items-center rounded-xl bg-emerald-50 text-medical-700">
+                                                    <Icon size={12} />
+                                                </div>
+                                                <span className="text-[8px] font-black">{label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-3">
+                                        <div className="mb-2 text-right text-[12px] font-black">أقسام الصيدلية</div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[
+                                                ['الأدوية', 'medicine-prescription'],
+                                                ['البشرة', 'skin-care'],
+                                                ['الطفل', 'mother-baby'],
+                                            ].map(([label, image]) => (
+                                                <div key={label} className="rounded-2xl bg-white p-2 text-center shadow-sm">
+                                                    <img src={`/images/categories/${image}.svg`} alt="" className="mx-auto h-9 w-9 object-contain" />
+                                                    <div className="mt-1 truncate text-[7px] font-black">{label}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                        {[1, 2].map((item) => (
+                                            <div key={item} className="rounded-2xl bg-white p-2 shadow-sm">
+                                                <div className="grid h-12 place-items-center rounded-xl bg-emerald-50">
+                                                    <Pill className="text-medical-700" size={18} />
+                                                </div>
+                                                <div className="mt-1 truncate text-[7px] font-black">منتج صيدلي</div>
+                                                <div className="text-[8px] font-black text-cyan-700">{item === 1 ? '48.00' : '69.00'} ج.م</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

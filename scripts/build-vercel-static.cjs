@@ -408,20 +408,104 @@ const html = String.raw`<!doctype html>
     }
     .phone {
       width: 210px;
-      height: 330px;
+      height: 360px;
       margin: auto;
-      border: 12px solid rgba(255,255,255,.25);
+      border: 10px solid #020617;
       border-radius: 42px;
-      background: white;
-      padding: 18px;
+      background: #020617;
+      padding: 8px;
       box-shadow: 0 28px 60px rgba(0,0,0,.24);
+      overflow: hidden;
     }
-    .phone div {
-      height: 44px;
+    .phone-screen {
+      height: 100%;
+      overflow: hidden;
+      border-radius: 32px;
+      background: #f4f8fb;
+      color: #0f172a;
+      direction: rtl;
+    }
+    .phone-top {
+      padding: 16px 12px 12px;
+      background: linear-gradient(135deg, #065f46, #10b981);
+      color: white;
+    }
+    .phone-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      font-weight: 1000;
+    }
+    .phone-brand span:first-child {
+      width: 28px;
+      height: 28px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.16);
+    }
+    .phone-search {
+      margin-top: 10px;
       border-radius: 16px;
-      background: #dffbf0;
-      margin-bottom: 12px;
+      background: white;
+      color: #64748b;
+      padding: 8px 10px;
+      font-size: 8px;
+      font-weight: 900;
     }
+    .phone-body { padding: 10px; }
+    .phone-hero {
+      border-radius: 24px;
+      background: linear-gradient(135deg, #065f46, #10b981 70%, #34d399);
+      color: white;
+      padding: 12px;
+      min-height: 118px;
+    }
+    .phone-hero small { font-size: 7px; font-weight: 1000; opacity: .85; }
+    .phone-hero strong { display: block; margin-top: 4px; font-size: 18px; line-height: 1.08; font-weight: 1000; }
+    .phone-hero p { margin: 4px 0 0; font-size: 7px; font-weight: 800; color: rgba(255,255,255,.82); }
+    .phone-product-pack {
+      width: 54px;
+      height: 42px;
+      margin: 10px auto 0;
+      border-radius: 12px;
+      background: white;
+      position: relative;
+      box-shadow: 0 12px 24px rgba(0,0,0,.14);
+    }
+    .phone-product-pack:before,
+    .phone-product-pack:after {
+      content: "";
+      position: absolute;
+      right: 12px;
+      height: 5px;
+      border-radius: 99px;
+    }
+    .phone-product-pack:before { top: 12px; left: 12px; background: #047857; }
+    .phone-product-pack:after { top: 23px; width: 24px; background: #67e8f9; }
+    .phone-badges {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 8px;
+    }
+    .phone-badges div,
+    .phone-cat,
+    .phone-mini-product {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(15,23,42,.06);
+    }
+    .phone-badges div { padding: 8px; font-size: 8px; font-weight: 1000; }
+    .phone-title { margin: 10px 0 7px; font-size: 12px; font-weight: 1000; }
+    .phone-cats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .phone-cat { padding: 7px; text-align: center; font-size: 7px; font-weight: 1000; }
+    .phone-cat img { width: 30px; height: 30px; object-fit: contain; display: block; margin: 0 auto 4px; }
+    .phone-products { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 8px; }
+    .phone-mini-product { padding: 7px; font-size: 7px; font-weight: 1000; }
+    .phone-mini-product div:first-child { height: 34px; border-radius: 12px; background: #ecfdf5; display: grid; place-items: center; color: #047857; font-size: 18px; }
+    .phone-mini-product span { display: block; margin-top: 3px; color: #04799b; font-size: 8px; }
     .footer {
       margin-top: 64px;
       background: #083d52;
@@ -587,7 +671,33 @@ const html = String.raw`<!doctype html>
           <p style="color:rgba(255,255,255,.78);font-weight:800;line-height:1.9">تطبيق Flutter للعميل جاهز داخل المشروع ومربوط بالمنتجات والطلبات والواجهة.</p>
           <div class="btns"><a class="btn primary" href="#">App Store</a><a class="btn ghost" href="#">Google Play</a></div>
         </div>
-        <div class="phone"><div></div><div></div><div></div><div style="height:120px"></div></div>
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="phone-top">
+              <div class="phone-brand"><span>💊</span><span>صيدلية د. محمد رمضان<br><small>رعاية موثوقة وتسوق أسرع</small></span></div>
+              <div class="phone-search">🔎 ابحث عن دواء أو منتج صحي</div>
+            </div>
+            <div class="phone-body">
+              <div class="phone-hero">
+                <small>منتجات أصلية 100%</small>
+                <strong>عروض الصيدلية</strong>
+                <p>خصومات على منتجات العناية والصحة</p>
+                <div class="phone-product-pack"></div>
+              </div>
+              <div class="phone-badges"><div>✓ منتجات أصلية</div><div>🚚 توصيل سريع</div></div>
+              <div class="phone-title">أقسام الصيدلية</div>
+              <div class="phone-cats">
+                <div class="phone-cat"><img src="/images/categories/medicine-prescription.svg" alt="">الأدوية</div>
+                <div class="phone-cat"><img src="/images/categories/skin-care.svg" alt="">البشرة</div>
+                <div class="phone-cat"><img src="/images/categories/mother-baby.svg" alt="">الطفل</div>
+              </div>
+              <div class="phone-products">
+                <div class="phone-mini-product"><div>💊</div>منتج صيدلي<span>48.00 ج.م</span></div>
+                <div class="phone-mini-product"><div>💊</div>عرض مميز<span>69.00 ج.م</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
