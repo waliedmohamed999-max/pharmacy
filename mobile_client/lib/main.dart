@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -498,10 +499,11 @@ class _HomeActionChip extends StatelessWidget {
 }
 
 class SearchBox extends StatelessWidget {
-  const SearchBox({this.controller, this.onChanged, this.onTap, this.readOnly = false, super.key});
+  const SearchBox({this.controller, this.onChanged, this.onTap, this.onClear, this.readOnly = false, super.key});
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onTap;
+  final VoidCallback? onClear;
   final bool readOnly;
 
   @override
@@ -511,11 +513,32 @@ class SearchBox extends StatelessWidget {
       onChanged: onChanged,
       onTap: onTap,
       readOnly: readOnly,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         hintText: 'ابحث عن دواء، فيتامين، باركود أو منتج صحي',
-        prefixIcon: Icon(Icons.search),
-        suffixIcon: Icon(Icons.qr_code_scanner),
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: _SearchTrailing(controller: controller, onClear: onClear, readOnly: readOnly),
       ),
+    );
+  }
+}
+
+class _SearchTrailing extends StatelessWidget {
+  const _SearchTrailing({required this.controller, required this.onClear, required this.readOnly});
+  final TextEditingController? controller;
+  final VoidCallback? onClear;
+  final bool readOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    if (readOnly || controller == null || onClear == null) {
+      return const Icon(Icons.qr_code_scanner);
+    }
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller!,
+      builder: (context, value, _) {
+        if (value.text.trim().isEmpty) return const Icon(Icons.qr_code_scanner);
+        return IconButton(onPressed: onClear, icon: const Icon(Icons.close_rounded));
+      },
     );
   }
 }
@@ -1005,6 +1028,7 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   final search = TextEditingController();
+  Timer? searchDebounce;
   String sort = 'newest';
   bool inStockOnly = false;
   bool grid = true;
@@ -1014,6 +1038,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   void dispose() {
+    searchDebounce?.cancel();
     search.dispose();
     super.dispose();
   }
@@ -1040,6 +1065,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   void reload() => setState(() => productsFuture = loadProducts());
 
+  void scheduleSearch(String _) {
+    searchDebounce?.cancel();
+    searchDebounce = Timer(const Duration(milliseconds: 450), reload);
+  }
+
   @override
   Widget build(BuildContext context) {
     final content = RefreshIndicator(
@@ -1050,7 +1080,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       },
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: ProductsHeader(search: search, onSearch: (_) => reload(), grid: grid, onToggleGrid: () => setState(() => grid = !grid), selectedCategory: selectedCategory)),
+          SliverToBoxAdapter(child: ProductsHeader(search: search, onSearch: scheduleSearch, grid: grid, onToggleGrid: () => setState(() => grid = !grid), selectedCategory: selectedCategory, onClear: () => setState(() { search.clear(); productsFuture = loadProducts(); }))),
           SliverToBoxAdapter(child: FilterPanel(categoriesFuture: categoriesFuture, selected: selectedCategory, sort: sort, inStockOnly: inStockOnly, onCategory: (value) => setState(() { selectedCategory = value; productsFuture = loadProducts(); }), onSort: (value) => setState(() { sort = value; productsFuture = loadProducts(); }), onStock: (value) => setState(() { inStockOnly = value; productsFuture = loadProducts(); }))),
           FutureSliverProducts(future: productsFuture, grid: grid, api: widget.api),
           const SliverToBoxAdapter(child: SizedBox(height: 96)),
@@ -1064,12 +1094,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
 }
 
 class ProductsHeader extends StatelessWidget {
-  const ProductsHeader({required this.search, required this.onSearch, required this.grid, required this.onToggleGrid, required this.selectedCategory, super.key});
+  const ProductsHeader({required this.search, required this.onSearch, required this.grid, required this.onToggleGrid, required this.selectedCategory, required this.onClear, super.key});
   final TextEditingController search;
   final ValueChanged<String> onSearch;
   final bool grid;
   final VoidCallback onToggleGrid;
   final CategoryItem? selectedCategory;
+  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1099,7 +1130,7 @@ class ProductsHeader extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            SearchBox(controller: search, onChanged: onSearch),
+            SearchBox(controller: search, onChanged: onSearch, onClear: onClear),
             const SizedBox(height: 12),
             const Wrap(
               spacing: 8,
@@ -1900,6 +1931,7 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   final phone = TextEditingController();
   Future<List<OrderSummary>>? future;
+  bool loading = false;
 
   @override
   void dispose() {
@@ -1960,9 +1992,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب رقم الجوال أولا')));
       return;
     }
+    if (loading) return;
     final nextFuture = widget.api.getJson('/orders', {'phone': value}).then((json) => (json['data'] as List).map((e) => OrderSummary.fromJson(e as Map<String, dynamic>)).toList());
-    setState(() => future = nextFuture);
-    await nextFuture;
+    setState(() {
+      loading = true;
+      future = nextFuture;
+    });
+    try {
+      await nextFuture;
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
 }
 
