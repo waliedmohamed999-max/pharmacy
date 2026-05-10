@@ -206,19 +206,57 @@ class CategoryItem {
 }
 
 class OrderSummary {
-  OrderSummary({required this.id, required this.status, required this.total, required this.createdAt, required this.items});
+  OrderSummary({
+    required this.id,
+    required this.customerName,
+    required this.phone,
+    required this.status,
+    required this.subtotal,
+    required this.discount,
+    required this.shipping,
+    required this.total,
+    required this.createdAt,
+    required this.items,
+  });
   final int id;
+  final String customerName;
+  final String phone;
   final String status;
+  final double subtotal;
+  final double discount;
+  final double shipping;
   final double total;
   final String createdAt;
-  final List<dynamic> items;
+  final List<OrderLine> items;
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) => OrderSummary(
         id: (json['id'] as num?)?.toInt() ?? 0,
+        customerName: json['customer_name'] as String? ?? '',
+        phone: json['phone'] as String? ?? '',
         status: json['status'] as String? ?? '',
+        subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0,
+        discount: (json['discount'] as num?)?.toDouble() ?? 0,
+        shipping: (json['shipping'] as num?)?.toDouble() ?? 0,
         total: (json['total'] as num?)?.toDouble() ?? 0,
         createdAt: json['created_at'] as String? ?? '',
-        items: json['items'] as List? ?? [],
+        items: (json['items'] as List? ?? []).map((item) => OrderLine.fromJson(item as Map<String, dynamic>)).toList(),
+      );
+}
+
+class OrderLine {
+  OrderLine({required this.productId, required this.name, required this.price, required this.qty, required this.lineTotal});
+  final int productId;
+  final String name;
+  final double price;
+  final int qty;
+  final double lineTotal;
+
+  factory OrderLine.fromJson(Map<String, dynamic> json) => OrderLine(
+        productId: (json['product_id'] as num?)?.toInt() ?? 0,
+        name: json['name'] as String? ?? '',
+        price: (json['price'] as num?)?.toDouble() ?? 0,
+        qty: (json['qty'] as num?)?.toInt() ?? 0,
+        lineTotal: (json['line_total'] as num?)?.toDouble() ?? 0,
       );
 }
 
@@ -1975,7 +2013,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     sliver: SliverList.separated(
                       itemCount: orders.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) => OrderCard(order: orders[index]),
+                      itemBuilder: (context, index) => OrderCard(order: orders[index], onOpen: () => openOrder(orders[index])),
                     ),
                   );
                 },
@@ -2003,6 +2041,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
     } finally {
       if (mounted) setState(() => loading = false);
     }
+  }
+
+  void openOrder(OrderSummary order) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => OrderDetailsScreen(api: widget.api, initialOrder: order, phone: phone.text.trim()),
+    ));
   }
 }
 
@@ -2153,8 +2197,9 @@ class OrdersEmpty extends StatelessWidget {
 }
 
 class OrderCard extends StatelessWidget {
-  const OrderCard({required this.order, super.key});
+  const OrderCard({required this.order, required this.onOpen, super.key});
   final OrderSummary order;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -2179,10 +2224,341 @@ class OrderCard extends StatelessWidget {
                 Expanded(child: OrderMetric(icon: Icons.payments_outlined, label: 'الإجمالي', value: money(order.total))),
               ],
             ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: onOpen,
+                icon: const Icon(Icons.arrow_back_rounded),
+                label: const Text('عرض تفاصيل الطلب'),
+              ),
+            ),
           ],
         ),
       );
 }
+
+class OrderDetailsScreen extends StatefulWidget {
+  const OrderDetailsScreen({required this.api, required this.initialOrder, required this.phone, super.key});
+  final ApiClient api;
+  final OrderSummary initialOrder;
+  final String phone;
+
+  @override
+  State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
+}
+
+class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+  late Future<OrderSummary> future;
+
+  @override
+  void initState() {
+    super.initState();
+    future = load();
+  }
+
+  Future<OrderSummary> load() async {
+    final json = await widget.api.getJson('/orders/${widget.initialOrder.id}', {'phone': widget.phone});
+    return OrderSummary.fromJson(json['data'] as Map<String, dynamic>);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: FutureBuilder<OrderSummary>(
+        future: future,
+        initialData: widget.initialOrder,
+        builder: (context, snapshot) {
+          final order = snapshot.data ?? widget.initialOrder;
+          if (snapshot.hasError && snapshot.connectionState == ConnectionState.done) {
+            return ErrorState(
+              message: snapshot.error.toString(),
+              onRetry: () => setState(() => future = load()),
+            );
+          }
+          return RefreshIndicator(
+            onRefresh: () async {
+              final next = load();
+              setState(() => future = next);
+              await next;
+            },
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(child: OrderDetailsHero(order: order, loading: snapshot.connectionState != ConnectionState.done)),
+                SliverToBoxAdapter(child: OrderDetailsTimeline(status: order.status)),
+                SliverToBoxAdapter(child: OrderCustomerCard(order: order)),
+                SliverToBoxAdapter(child: OrderItemsCard(items: order.items)),
+                SliverToBoxAdapter(child: OrderPaymentCard(order: order)),
+                const SliverToBoxAdapter(child: SizedBox(height: 110)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class OrderDetailsHero extends StatelessWidget {
+  const OrderDetailsHero({required this.order, required this.loading, super.key});
+  final OrderSummary order;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 12, 16, 22),
+        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff052e2b), Color(0xff059669)])),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                IconButton.filledTonal(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.arrow_forward_rounded)),
+                const Spacer(),
+                StatusChip(status: order.status),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text('تفاصيل طلب #${order.id}', style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Text('متابعة دقيقة لحالة الطلب وبنوده ومراجعة الدفع.', style: TextStyle(color: Colors.white.withValues(alpha: .82), fontWeight: FontWeight.w800)),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(child: HeroMetric(icon: Icons.inventory_2_outlined, label: 'البنود', value: '${order.items.length}')),
+                const SizedBox(width: 10),
+                Expanded(child: HeroMetric(icon: Icons.payments_outlined, label: 'الإجمالي', value: money(order.total))),
+              ],
+            ),
+            if (loading) ...[
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: LinearProgressIndicator(minHeight: 6, backgroundColor: Colors.white.withValues(alpha: .16), color: Colors.white),
+              ),
+            ],
+          ],
+        ),
+      );
+}
+
+class HeroMetric extends StatelessWidget {
+  const HeroMetric({required this.icon, required this.label, required this.value, super.key});
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: Colors.white.withValues(alpha: .13), borderRadius: BorderRadius.circular(22), border: Border.all(color: Colors.white.withValues(alpha: .15))),
+        child: Row(
+          children: [
+            Container(width: 38, height: 38, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: Colors.white, size: 20)),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(color: Colors.white.withValues(alpha: .75), fontWeight: FontWeight.w800, fontSize: 11)), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16))])),
+          ],
+        ),
+      );
+}
+
+class OrderDetailsTimeline extends StatelessWidget {
+  const OrderDetailsTimeline({required this.status, super.key});
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = orderStepIndex(status);
+    const steps = [
+      (Icons.receipt_long_outlined, 'استلام الطلب'),
+      (Icons.medication_outlined, 'تجهيز الدواء'),
+      (Icons.local_shipping_outlined, 'التوصيل'),
+      (Icons.check_circle_outline, 'اكتمال'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: softCard(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('مسار الطلب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 16),
+            for (var i = 0; i < steps.length; i++)
+              TimelineStep(
+                icon: steps[i].$1,
+                label: steps[i].$2,
+                done: status == 'cancelled' ? false : i <= active,
+                last: i == steps.length - 1,
+              ),
+            if (status == 'cancelled')
+              Container(
+                margin: const EdgeInsets.only(top: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.red.withValues(alpha: .09), borderRadius: BorderRadius.circular(18)),
+                child: const Row(children: [Icon(Icons.cancel_outlined, color: Colors.red), SizedBox(width: 8), Expanded(child: Text('تم إلغاء الطلب. تواصل مع الصيدلية إذا احتجت مساعدة.', style: TextStyle(fontWeight: FontWeight.w800, color: Colors.red)))]),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TimelineStep extends StatelessWidget {
+  const TimelineStep({required this.icon, required this.label, required this.done, required this.last, super.key});
+  final IconData icon;
+  final String label;
+  final bool done;
+  final bool last;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = done ? Theme.of(context).colorScheme.primary : Colors.grey;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(width: 40, height: 40, decoration: BoxDecoration(color: color.withValues(alpha: .12), shape: BoxShape.circle), child: Icon(done ? Icons.check_rounded : icon, color: color, size: 20)),
+            if (!last) Container(width: 2, height: 28, color: color.withValues(alpha: .20)),
+          ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(label, style: TextStyle(fontWeight: FontWeight.w900, color: done ? null : Colors.grey.shade600)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class OrderCustomerCard extends StatelessWidget {
+  const OrderCustomerCard({required this.order, super.key});
+  final OrderSummary order;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('بيانات العميل', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              SuccessInfoRow(icon: Icons.person_outline_rounded, label: 'الاسم', value: order.customerName.isEmpty ? 'عميل الصيدلية' : order.customerName),
+              const Divider(height: 22),
+              SuccessInfoRow(icon: Icons.phone_iphone_rounded, label: 'الجوال', value: order.phone.isEmpty ? '-' : order.phone),
+              const Divider(height: 22),
+              SuccessInfoRow(icon: Icons.schedule_outlined, label: 'تاريخ الطلب', value: order.createdAt.isEmpty ? '-' : order.createdAt),
+            ],
+          ),
+        ),
+      );
+}
+
+class OrderItemsCard extends StatelessWidget {
+  const OrderItemsCard({required this.items, super.key});
+  final List<OrderLine> items;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('بنود الطلب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              if (items.isEmpty)
+                Text('لا توجد بنود مسجلة لهذا الطلب.', style: mutedStyle(context, 13))
+              else
+                for (final item in items) OrderLineTile(item: item),
+            ],
+          ),
+        ),
+      );
+}
+
+class OrderLineTile extends StatelessWidget {
+  const OrderLineTile({required this.item, super.key});
+  final OrderLine item;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .045), borderRadius: BorderRadius.circular(18)),
+        child: Row(
+          children: [
+            Container(width: 42, height: 42, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .10), borderRadius: BorderRadius.circular(15)), child: Icon(Icons.medication_liquid_outlined, color: Theme.of(context).colorScheme.primary)),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(item.name.isEmpty ? 'منتج صيدلي' : item.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 4), Text('${item.qty} × ${money(item.price)}', style: mutedStyle(context, 12))])),
+            const SizedBox(width: 8),
+            Text(money(item.lineTotal), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900)),
+          ],
+        ),
+      );
+}
+
+class PriceLine extends StatelessWidget {
+  const PriceLine({required this.label, required this.value, super.key});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Expanded(child: Text(label, style: mutedStyle(context, 13))),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
+          ],
+        ),
+      );
+}
+
+class OrderPaymentCard extends StatelessWidget {
+  const OrderPaymentCard({required this.order, super.key});
+  final OrderSummary order;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('ملخص الدفع', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              PriceLine(label: 'الإجمالي الفرعي', value: money(order.subtotal)),
+              PriceLine(label: 'الخصم', value: money(order.discount)),
+              PriceLine(label: 'التوصيل', value: order.shipping == 0 ? 'مجاني' : money(order.shipping)),
+              const Divider(height: 24),
+              Row(children: [const Expanded(child: Text('الإجمالي النهائي', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18))), Text(money(order.total), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 22))]),
+            ],
+          ),
+        ),
+      );
+}
+
+int orderStepIndex(String status) => switch (status) {
+      'new' => 0,
+      'preparing' || 'processing' => 1,
+      'shipped' => 2,
+      'completed' || 'delivered' => 3,
+      _ => 0,
+    };
 
 double orderProgress(String status) => switch (status) {
       'new' => .25,
