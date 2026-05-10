@@ -295,6 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final featured = _products(sections['featured']);
           final deals = _products(sections['deals']);
           final best = _products(sections['best_sellers']);
+          final concerns = _maps(sections['concerns']);
 
           return CustomScrollView(
             slivers: [
@@ -305,7 +306,11 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(child: ProductRail(title: 'عروض اليوم', products: deals, urgent: true)),
               SliverToBoxAdapter(child: ProductRail(title: 'منتجات مميزة', products: featured)),
               SliverToBoxAdapter(child: ProductRail(title: 'الأكثر مبيعًا', products: best)),
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: BrandCarousel()),
+              SliverToBoxAdapter(child: ConcernGrid(concerns: concerns)),
+              const SliverToBoxAdapter(child: TestimonialsStrip()),
+              const SliverToBoxAdapter(child: AppDownloadBanner()),
+              const SliverToBoxAdapter(child: SizedBox(height: 96)),
             ],
           );
         },
@@ -314,6 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Product> _products(dynamic raw) => (raw as List? ?? []).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+  List<Map<String, dynamic>> _maps(dynamic raw) => (raw as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
 }
 
 class StoreHeader extends StatelessWidget {
@@ -323,8 +329,10 @@ class StoreHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 12, 16, 14),
-      decoration: const BoxDecoration(color: Color(0xff066447)),
+      padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 10, 14, 14),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(colors: [Color(0xff055f46), Color(0xff047857)]),
+      ),
       child: Column(
         children: [
           Row(
@@ -333,19 +341,33 @@ class StoreHeader extends StatelessWidget {
                 height: 50,
                 width: 50,
                 decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(18)),
-                child: const Icon(Icons.medication_liquid, color: Colors.white),
+                child: const Icon(Icons.medical_services_rounded, color: Colors.white),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(store['name'] as String? ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
-                    Text(store['tagline'] as String? ?? '', style: TextStyle(color: Colors.white.withValues(alpha: .78), fontWeight: FontWeight.w700)),
+                    Text(
+                      store['name'] as String? ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20),
+                    ),
+                    Text(
+                      store['tagline'] as String? ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.white.withValues(alpha: .78), fontWeight: FontWeight.w700),
+                    ),
                   ],
                 ),
               ),
-              const Icon(Icons.notifications_none_rounded, color: Colors.white),
+              IconButton.filledTonal(
+                onPressed: () {},
+                icon: const Icon(Icons.notifications_none_rounded),
+                style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: .14), foregroundColor: Colors.white),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -378,47 +400,138 @@ class HeroCarousel extends StatelessWidget {
         : banners;
 
     return SizedBox(
-      height: 250,
+      height: 292,
       child: PageView.builder(
-        padEnds: false,
-        controller: PageController(viewportFraction: .92),
+        padEnds: true,
+        controller: PageController(viewportFraction: .94),
         itemCount: items.length,
         itemBuilder: (context, index) {
           final banner = items[index];
-          return Container(
-            margin: const EdgeInsets.fromLTRB(12, 16, 4, 8),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xff05704f), Color(0xff20c997)]),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .08), blurRadius: 24, offset: const Offset(0, 12))],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('منتجات أصلية 100%', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 8),
-                      Text(banner['title'] as String? ?? '', maxLines: 2, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, height: 1.1)),
-                      const SizedBox(height: 8),
-                      Text(banner['subtitle'] as String? ?? '', maxLines: 2, style: TextStyle(color: Colors.white.withValues(alpha: .86), fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 14),
-                      FilledButton.tonal(onPressed: () {}, child: const Text('تسوق الآن')),
-                    ],
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 360;
+              return Container(
+                margin: const EdgeInsets.fromLTRB(6, 16, 6, 10),
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  gradient: LinearGradient(
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                    colors: index.isEven
+                        ? const [Color(0xff065f46), Color(0xff059669), Color(0xff34d399)]
+                        : const [Color(0xff075985), Color(0xff0f766e), Color(0xff14b8a6)],
                   ),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .10), blurRadius: 28, offset: const Offset(0, 14))],
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: AppImage(url: banner['image'] as String? ?? '', fit: BoxFit.cover),
-                  ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: -50,
+                      top: -40,
+                      child: Container(width: 160, height: 160, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: .12))),
+                    ),
+                    Positioned(
+                      right: -70,
+                      bottom: -80,
+                      child: Container(width: 220, height: 220, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: .10))),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(compact ? 16 : 20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 6,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)),
+                                  child: const Text(
+                                    'منتجات أصلية 100%',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  banner['title'] as String? ?? '',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: Colors.white, fontSize: compact ? 25 : 31, fontWeight: FontWeight.w900, height: 1.06),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  banner['subtitle'] as String? ?? '',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: Colors.white.withValues(alpha: .88), fontWeight: FontWeight.w800, fontSize: compact ? 12 : 13, height: 1.45),
+                                ),
+                                const SizedBox(height: 14),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    FilledButton(
+                                      onPressed: () {},
+                                      style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xff065f46), visualDensity: VisualDensity.compact),
+                                      child: const Text('تسوق الآن'),
+                                    ),
+                                    OutlinedButton(
+                                      onPressed: () {},
+                                      style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withValues(alpha: .42)), visualDensity: VisualDensity.compact),
+                                      child: const Text('العروض'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 4,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  height: compact ? 146 : 172,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: .14),
+                                    borderRadius: BorderRadius.circular(26),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(26),
+                                    child: AppImage(url: banner['image'] as String? ?? '', fit: BoxFit.cover),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: -12,
+                                  right: 10,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .14), blurRadius: 18)]),
+                                    child: const Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('خصم حتى', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey)),
+                                        Text('40%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xffe11d48), height: 1)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -524,6 +637,201 @@ class ProductRail extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(width: 12),
           itemBuilder: (context, index) => ProductCard(product: products[index], width: 185),
         ),
+      ),
+    );
+  }
+}
+
+class BrandCarousel extends StatelessWidget {
+  const BrandCarousel({super.key});
+
+  static const brands = ['Now', 'Sebamed', 'Accu-Chek', 'Mustela', 'Centrum', 'Vichy', 'La Roche-Posay', 'Bioderma'];
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionBlock(
+      title: 'أشهر الماركات الطبية',
+      child: SizedBox(
+        height: 112,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          scrollDirection: Axis.horizontal,
+          itemCount: brands.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) => Container(
+            width: 150,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: .18)),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .04), blurRadius: 16, offset: const Offset(0, 8))],
+            ),
+            child: Text(brands[index], textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.grey, fontSize: 16)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ConcernGrid extends StatelessWidget {
+  const ConcernGrid({required this.concerns, super.key});
+  final List<Map<String, dynamic>> concerns;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = concerns.isEmpty
+        ? const [
+            {'title': 'المناعة', 'subtitle': 'دعم يومي لصحة أقوى'},
+            {'title': 'السكري', 'subtitle': 'قياس ومتابعة ومنتجات أساسية'},
+            {'title': 'ضغط الدم', 'subtitle': 'أجهزة ومنتجات متابعة منزلية'},
+            {'title': 'العناية بالبشرة', 'subtitle': 'حلول طبية لبشرة صحية'},
+          ]
+        : concerns;
+
+    return SectionBlock(
+      title: 'تسوق حسب الاحتياج',
+      child: GridView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisExtent: 142, crossAxisSpacing: 12, mainAxisSpacing: 12),
+        itemCount: items.take(6).length,
+        itemBuilder: (context, index) {
+          final item = items[index];
+          final colors = [
+            const Color(0xffecfdf5),
+            const Color(0xffeff6ff),
+            const Color(0xfffff1f2),
+            const Color(0xfffff7ed),
+            const Color(0xfff5f3ff),
+            const Color(0xfff0fdf4),
+          ];
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(color: colors[index % colors.length], borderRadius: BorderRadius.circular(18)),
+                    child: Icon(Icons.medication_liquid_outlined, color: Theme.of(context).colorScheme.primary),
+                  ),
+                  const Spacer(),
+                  Text(item['title'] as String? ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+                  const SizedBox(height: 4),
+                  Text(item['subtitle'] as String? ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Colors.grey.shade600, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class TestimonialsStrip extends StatelessWidget {
+  const TestimonialsStrip({super.key});
+
+  static const reviews = [
+    ('أحمد', 'تجربة شراء ممتازة والتوصيل كان سريع جدا.'),
+    ('منى', 'المنتجات وصلت مغلفة ونظيفة والأسعار واضحة.'),
+    ('كريم', 'واجهة سهلة والعروض واضحة. طلبت في دقائق.'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionBlock(
+      title: 'ثقة يومية من عملائنا',
+      child: SizedBox(
+        height: 162,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          scrollDirection: Axis.horizontal,
+          itemCount: reviews.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            final review = reviews[index];
+            return Container(
+              width: 280,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(24), border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: .16))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(backgroundColor: const Color(0xffbbf7d0), child: Text(review.$1.substring(0, 1), style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xff065f46)))),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(review.$1, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16))),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xffe0f2fe), borderRadius: BorderRadius.circular(99)),
+                        child: const Text('شراء موثق', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xff0369a1))),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('★★★★★', style: TextStyle(color: Color(0xffffb020), letterSpacing: 1.5)),
+                  const SizedBox(height: 8),
+                  Text(review.$2, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w700, height: 1.5)),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class AppDownloadBanner extends StatelessWidget {
+  const AppDownloadBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: const LinearGradient(colors: [Color(0xff063f36), Color(0xff0f766e)]),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('تطبيق العملاء', style: TextStyle(color: Color(0xffa7f3d0), fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                const Text('تسوق من الموبايل بسهولة', maxLines: 2, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24, height: 1.15)),
+                const SizedBox(height: 10),
+                Text('منتجات، عروض، سلة، وتتبع طلبات في تجربة واحدة.', style: TextStyle(color: Colors.white.withValues(alpha: .78), fontWeight: FontWeight.w700, height: 1.5)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 92,
+            height: 150,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), border: Border.all(color: Colors.white.withValues(alpha: .4), width: 5)),
+            child: Column(
+              children: [
+                Container(height: 26, decoration: BoxDecoration(color: const Color(0xffd1fae5), borderRadius: BorderRadius.circular(10))),
+                const SizedBox(height: 8),
+                Expanded(child: Container(decoration: BoxDecoration(color: const Color(0xffecfeff), borderRadius: BorderRadius.circular(14)))),
+                const SizedBox(height: 8),
+                Container(height: 18, decoration: BoxDecoration(color: const Color(0xff059669), borderRadius: BorderRadius.circular(99))),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
