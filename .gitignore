@@ -21,6 +21,11 @@
 /storage/framework/sessions/*
 !/storage/framework/sessions/.gitignore
 /vendor
+/flutter_sdk
+/mobile_client/.dart_tool
+/mobile_client/build
+/mobile_client/.flutter-plugins
+/mobile_client/.flutter-plugins-dependencies
 Homestead.json
 Homestead.yaml
 Thumbs.db

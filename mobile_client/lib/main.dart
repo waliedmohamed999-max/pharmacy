@@ -1,8 +1,7 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
@@ -28,7 +27,7 @@ class _PharmacyClientAppState extends State<PharmacyClientApp> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = GoogleFonts.cairoTextTheme();
+    final textTheme = ThemeData(brightness: Brightness.light).textTheme.apply(fontFamily: 'Cairo');
 
     return CartScope(
       cart: cart,
@@ -40,7 +39,7 @@ class _PharmacyClientAppState extends State<PharmacyClientApp> {
         theme: _theme(Brightness.light, textTheme),
         darkTheme: _theme(Brightness.dark, textTheme),
         builder: (context, child) => Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: ui.TextDirection.rtl,
           child: child!,
         ),
         home: ClientShell(
@@ -72,7 +71,7 @@ class _PharmacyClientAppState extends State<PharmacyClientApp> {
         displayColor: isDark ? Colors.white : const Color(0xff0f172a),
       ),
       appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: isDark ? const Color(0xff111c2f) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -301,7 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
             slivers: [
               SliverToBoxAdapter(child: StoreHeader(store: store)),
               SliverToBoxAdapter(child: HeroCarousel(banners: banners)),
-              SliverToBoxAdapter(child: TrustBadges()),
+              const SliverToBoxAdapter(child: TrustBadges()),
               SliverToBoxAdapter(child: CategoryStrip(categories: categories)),
               SliverToBoxAdapter(child: ProductRail(title: 'عروض اليوم', products: deals, urgent: true)),
               SliverToBoxAdapter(child: ProductRail(title: 'منتجات مميزة', products: featured)),
@@ -333,7 +332,7 @@ class StoreHeader extends StatelessWidget {
               Container(
                 height: 50,
                 width: 50,
-                decoration: BoxDecoration(color: Colors.white.withOpacity(.14), borderRadius: BorderRadius.circular(18)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(18)),
                 child: const Icon(Icons.medication_liquid, color: Colors.white),
               ),
               const SizedBox(width: 12),
@@ -342,7 +341,7 @@ class StoreHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(store['name'] as String? ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
-                    Text(store['tagline'] as String? ?? '', style: TextStyle(color: Colors.white.withOpacity(.78), fontWeight: FontWeight.w700)),
+                    Text(store['tagline'] as String? ?? '', style: TextStyle(color: Colors.white.withValues(alpha: .78), fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
@@ -392,7 +391,7 @@ class HeroCarousel extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [Color(0xff05704f), Color(0xff20c997)]),
               borderRadius: BorderRadius.circular(30),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(.08), blurRadius: 24, offset: const Offset(0, 12))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .08), blurRadius: 24, offset: const Offset(0, 12))],
             ),
             child: Row(
               children: [
@@ -405,7 +404,7 @@ class HeroCarousel extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(banner['title'] as String? ?? '', maxLines: 2, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, height: 1.1)),
                       const SizedBox(height: 8),
-                      Text(banner['subtitle'] as String? ?? '', maxLines: 2, style: TextStyle(color: Colors.white.withOpacity(.86), fontWeight: FontWeight.w700)),
+                      Text(banner['subtitle'] as String? ?? '', maxLines: 2, style: TextStyle(color: Colors.white.withValues(alpha: .86), fontWeight: FontWeight.w700)),
                       const SizedBox(height: 14),
                       FilledButton.tonal(onPressed: () {}, child: const Text('تسوق الآن')),
                     ],
@@ -428,7 +427,7 @@ class HeroCarousel extends StatelessWidget {
 }
 
 class TrustBadges extends StatelessWidget {
-  TrustBadges({super.key});
+  const TrustBadges({super.key});
   final badges = const [
     (Icons.verified_user_outlined, 'منتجات أصلية'),
     (Icons.local_shipping_outlined, 'توصيل سريع'),
@@ -1018,16 +1017,19 @@ class AppImage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (url.isEmpty) {
       return Container(
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(.08), borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(20)),
         child: Icon(Icons.medication_liquid, color: Theme.of(context).colorScheme.primary, size: 54),
       );
     }
 
-    return CachedNetworkImage(
-      imageUrl: url,
+    return Image.network(
+      url,
       fit: fit,
-      placeholder: (_, __) => Container(color: Theme.of(context).colorScheme.primary.withOpacity(.06)),
-      errorWidget: (_, __, ___) => Icon(Icons.medication_liquid, color: Theme.of(context).colorScheme.primary, size: 48),
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(color: Theme.of(context).colorScheme.primary.withValues(alpha: .06));
+      },
+      errorBuilder: (_, __, ___) => Icon(Icons.medication_liquid, color: Theme.of(context).colorScheme.primary, size: 48),
     );
   }
 }
