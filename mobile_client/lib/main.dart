@@ -390,10 +390,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final email = TextEditingController();
   final address = TextEditingController();
   final allergy = TextEditingController();
+  final emergencyPhone = TextEditingController();
+  final insurance = TextEditingController();
   bool saved = false;
   bool orderUpdates = true;
   bool offerAlerts = true;
   bool refillReminder = false;
+  bool biometricLock = true;
+  bool preciseLocation = false;
+  bool dataSync = true;
+  final Set<String> healthTags = {};
 
   @override
   void dispose() {
@@ -402,11 +408,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     email.dispose();
     address.dispose();
     allergy.dispose();
+    emergencyPhone.dispose();
+    insurance.dispose();
     super.dispose();
   }
 
   int get completion {
-    final fields = [name.text, phone.text, email.text, address.text, allergy.text];
+    final fields = [name.text, phone.text, email.text, address.text, allergy.text, emergencyPhone.text, insurance.text];
     final filled = fields.where((value) => value.trim().isNotEmpty).length;
     return ((filled / fields.length) * 100).round();
   }
@@ -417,7 +425,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: SettingsHero(completion: completion, saved: saved)),
-          SliverToBoxAdapter(child: SettingsProfileCard(name: name, phone: phone, email: email, address: address, allergy: allergy, onChanged: () => setState(() => saved = false))),
+          SliverToBoxAdapter(child: SettingsMemberCard(name: name.text, phone: phone.text, completion: completion)),
+          SliverToBoxAdapter(child: SettingsProfileCard(name: name, phone: phone, email: email, address: address, allergy: allergy, emergencyPhone: emergencyPhone, insurance: insurance, onChanged: () => setState(() => saved = false))),
+          SliverToBoxAdapter(
+            child: SettingsHealthCard(
+              selected: healthTags,
+              onToggle: (tag) => setState(() {
+                healthTags.contains(tag) ? healthTags.remove(tag) : healthTags.add(tag);
+                saved = false;
+              }),
+            ),
+          ),
           SliverToBoxAdapter(
             child: SettingsNotificationsCard(
               orderUpdates: orderUpdates,
@@ -429,6 +447,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           SliverToBoxAdapter(
+            child: SettingsSecurityCard(
+              biometricLock: biometricLock,
+              preciseLocation: preciseLocation,
+              dataSync: dataSync,
+              onBiometric: (value) => setState(() => biometricLock = value),
+              onLocation: (value) => setState(() => preciseLocation = value),
+              onDataSync: (value) => setState(() => dataSync = value),
+            ),
+          ),
+          SliverToBoxAdapter(
             child: SettingsToolsGrid(
               onOpenProducts: widget.onOpenProducts,
               onOpenCart: widget.onOpenCart,
@@ -436,6 +464,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onToggleTheme: widget.onToggleTheme,
             ),
           ),
+          const SliverToBoxAdapter(child: SettingsSupportCard()),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 110),
@@ -494,13 +523,83 @@ class SettingsHero extends StatelessWidget {
       );
 }
 
+class SettingsMemberCard extends StatelessWidget {
+  const SettingsMemberCard({required this.name, required this.phone, required this.completion, super.key});
+  final String name;
+  final String phone;
+  final int completion;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            gradient: const LinearGradient(colors: [Color(0xffecfdf5), Color(0xffffffff)]),
+            border: Border.all(color: const Color(0xffbbf7d0)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 66,
+                height: 66,
+                decoration: const BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [Color(0xff059669), Color(0xff14b8a6)])),
+                child: Center(child: Text(memberInitial(name), style: const TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900))),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name.trim().isEmpty ? 'عميل الصيدلية' : name.trim(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 19)),
+                    const SizedBox(height: 4),
+                    Text(phone.trim().isEmpty ? 'أضف رقم الجوال لتسريع الطلب' : phone.trim(), style: mutedStyle(context, 12)),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        SettingsMiniBadge(icon: Icons.verified_user_outlined, label: completion >= 70 ? 'ملف موثق' : 'ملف قيد الإكمال'),
+                        const SettingsMiniBadge(icon: Icons.local_shipping_outlined, label: 'شراء أسرع'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class SettingsMiniBadge extends StatelessWidget {
+  const SettingsMiniBadge({required this.icon, required this.label, super.key});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(99)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 5), Text(label, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 11, fontWeight: FontWeight.w900))]),
+      );
+}
+
+String memberInitial(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? 'ع' : trimmed.substring(0, 1);
+}
+
 class SettingsProfileCard extends StatelessWidget {
-  const SettingsProfileCard({required this.name, required this.phone, required this.email, required this.address, required this.allergy, required this.onChanged, super.key});
+  const SettingsProfileCard({required this.name, required this.phone, required this.email, required this.address, required this.allergy, required this.emergencyPhone, required this.insurance, required this.onChanged, super.key});
   final TextEditingController name;
   final TextEditingController phone;
   final TextEditingController email;
   final TextEditingController address;
   final TextEditingController allergy;
+  final TextEditingController emergencyPhone;
+  final TextEditingController insurance;
   final VoidCallback onChanged;
 
   @override
@@ -521,6 +620,8 @@ class SettingsProfileCard extends StatelessWidget {
               SettingsField(controller: email, label: 'البريد الإلكتروني', icon: Icons.alternate_email_rounded, keyboard: TextInputType.emailAddress, onChanged: onChanged),
               SettingsField(controller: address, label: 'العنوان المختصر', icon: Icons.location_on_outlined, onChanged: onChanged),
               SettingsField(controller: allergy, label: 'حساسية أو ملاحظات صحية', icon: Icons.health_and_safety_outlined, onChanged: onChanged),
+              SettingsField(controller: emergencyPhone, label: 'جوال الطوارئ', icon: Icons.emergency_outlined, keyboard: TextInputType.phone, onChanged: onChanged),
+              SettingsField(controller: insurance, label: 'شركة التأمين أو رقم الوثيقة', icon: Icons.policy_outlined, onChanged: onChanged),
             ],
           ),
         ),
@@ -545,6 +646,52 @@ class SettingsField extends StatelessWidget {
           decoration: InputDecoration(prefixIcon: Icon(icon), labelText: label),
         ),
       );
+}
+
+class SettingsHealthCard extends StatelessWidget {
+  const SettingsHealthCard({required this.selected, required this.onToggle, super.key});
+  final Set<String> selected;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    const tags = ['سكري', 'ضغط', 'حساسية', 'أطفال', 'جلدية', 'فيتامينات', 'قلب', 'نوم'];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: softCard(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                CircleIcon(icon: Icons.monitor_heart_outlined),
+                SizedBox(width: 10),
+                Expanded(child: Text('الملف الصحي', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20))),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text('اختيارات تساعد التطبيق يعرض منتجات وتنبيهات أقرب لاحتياجك.', style: mutedStyle(context, 13)),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final tag in tags)
+                  FilterChip(
+                    selected: selected.contains(tag),
+                    label: Text(tag),
+                    avatar: Icon(selected.contains(tag) ? Icons.check_rounded : Icons.add_rounded, size: 16),
+                    onSelected: (_) => onToggle(tag),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class SettingsNotificationsCard extends StatelessWidget {
@@ -600,6 +747,43 @@ class SettingsSwitch extends StatelessWidget {
         subtitle: Text(subtitle, style: mutedStyle(context, 12)),
         value: value,
         onChanged: onChanged,
+      );
+}
+
+class SettingsSecurityCard extends StatelessWidget {
+  const SettingsSecurityCard({
+    required this.biometricLock,
+    required this.preciseLocation,
+    required this.dataSync,
+    required this.onBiometric,
+    required this.onLocation,
+    required this.onDataSync,
+    super.key,
+  });
+  final bool biometricLock;
+  final bool preciseLocation;
+  final bool dataSync;
+  final ValueChanged<bool> onBiometric;
+  final ValueChanged<bool> onLocation;
+  final ValueChanged<bool> onDataSync;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('الأمان والخصوصية', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+              const SizedBox(height: 10),
+              SettingsSwitch(icon: Icons.fingerprint_rounded, title: 'قفل التطبيق بالبصمة', subtitle: 'جاهزية لحماية بيانات العميل', value: biometricLock, onChanged: onBiometric),
+              SettingsSwitch(icon: Icons.location_searching_rounded, title: 'مشاركة الموقع للتوصيل', subtitle: 'يساعد في دقة عنوان التسليم', value: preciseLocation, onChanged: onLocation),
+              SettingsSwitch(icon: Icons.cloud_sync_outlined, title: 'مزامنة آمنة مع الصيدلية', subtitle: 'ربط التفضيلات بالطلبات والداش بورد لاحقا', value: dataSync, onChanged: onDataSync),
+            ],
+          ),
+        ),
       );
 }
 
@@ -670,6 +854,51 @@ class SettingsToolCard extends StatelessWidget {
               Text(tool.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 11)),
             ],
           ),
+        ),
+      );
+}
+
+class SettingsSupportCard extends StatelessWidget {
+  const SettingsSupportCard({super.key});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('مركز المساعدة', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+              SizedBox(height: 12),
+              SettingsActionRow(icon: Icons.support_agent_outlined, title: 'تواصل مع الصيدلية', subtitle: 'استفسار عن دواء أو طلب'),
+              SettingsActionRow(icon: Icons.receipt_long_outlined, title: 'سياسة الطلب والاسترجاع', subtitle: 'تعليمات الشراء والتبديل'),
+              SettingsActionRow(icon: Icons.privacy_tip_outlined, title: 'خصوصية البيانات الطبية', subtitle: 'حماية معلومات العميل الصحية'),
+            ],
+          ),
+        ),
+      );
+}
+
+class SettingsActionRow extends StatelessWidget {
+  const SettingsActionRow({required this.icon, required this.title, required this.subtitle, super.key});
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 9),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .045), borderRadius: BorderRadius.circular(18)),
+        child: Row(
+          children: [
+            CircleIcon(icon: icon),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), Text(subtitle, style: mutedStyle(context, 12))])),
+            Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: Theme.of(context).colorScheme.primary),
+          ],
         ),
       );
 }
