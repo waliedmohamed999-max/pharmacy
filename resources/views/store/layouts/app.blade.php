@@ -142,53 +142,120 @@
 @endphp
 
 @if(($footer['enabled'] ?? true) && !View::hasSection('full_bleed'))
-    <footer class="mt-10 bg-[#073f4d] text-white">
-        <div class="mx-auto max-w-7xl px-4 py-10 md:px-5">
-            <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-3xl border border-white/15 bg-white/10 p-5">
-                    <h3 class="mb-2 text-2xl font-black">{{ $footer['brand_title'] ?? 'صيدلية د. محمد رمضان' }}</h3>
-                    <p class="text-sm font-semibold leading-7 text-white/75">{{ $footer['about'] ?? 'متجر صيدلي حديث يدمج التسوق الصحي وإدارة الطلبات في تجربة واحدة.' }}</p>
-                </div>
+    <footer class="mt-12 overflow-hidden bg-slate-950 text-white">
+        <div class="relative">
+            <div class="absolute -right-32 top-0 h-80 w-80 rounded-full bg-emerald-500/20 blur-3xl"></div>
+            <div class="absolute -left-32 bottom-0 h-80 w-80 rounded-full bg-cyan-500/20 blur-3xl"></div>
 
-                <div class="rounded-3xl border border-white/15 bg-white/10 p-5">
-                    <h4 class="mb-3 text-xl font-black">{{ $footer['links_title'] ?? 'روابط مفيدة' }}</h4>
-                    <ul class="space-y-2 text-sm font-semibold text-white/75">
-                        <li><a class="hover:text-white" href="{{ route('store.home') }}">الرئيسية</a></li>
-                        <li><a class="hover:text-white" href="{{ route('store.products.index') }}">كل المنتجات</a></li>
-                        <li><a class="hover:text-white" href="{{ route('store.cart.index') }}">السلة</a></li>
-                        @if(($footer['show_pages'] ?? true) && !empty($footerPages) && $footerPages->count())
-                            @foreach($footerPages as $footerPage)
-                                <li><a href="{{ route('store.pages.show', $footerPage->slug) }}" class="hover:text-white">{{ $footerPage->title }}</a></li>
-                            @endforeach
-                        @endif
-                    </ul>
-                </div>
-
-                @if(($footer['newsletter_enabled'] ?? true))
-                    <div class="rounded-3xl border border-white/15 bg-white/10 p-5">
-                        <h4 class="mb-3 text-xl font-black">{{ $footer['newsletter_title'] ?? 'النشرة الإخبارية' }}</h4>
-                        <p class="mb-3 text-sm font-semibold leading-7 text-white/75">{{ $footer['newsletter_text'] ?? 'تابع أحدث العروض والمنتجات الصحية.' }}</p>
-                        <form class="flex gap-2" onsubmit="event.preventDefault();">
-                            <input type="email" class="min-w-0 flex-1 rounded-2xl border border-white/20 bg-white px-3 py-2 text-sm font-bold text-slate-900 outline-none" placeholder="البريد الإلكتروني">
-                            <button type="button" class="rounded-2xl bg-amber-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-amber-300">اشتراك</button>
-                        </form>
+            <div class="relative mx-auto max-w-7xl px-4 py-12 md:px-5">
+                <div class="mb-8 grid gap-4 rounded-[2rem] border border-white/10 bg-white/[0.06] p-4 backdrop-blur md:grid-cols-4 md:p-5">
+                    <div class="flex items-center gap-3 rounded-3xl bg-white/[0.06] p-4">
+                        <span class="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200">
+                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+                        </span>
+                        <div>
+                            <div class="font-black">منتجات أصلية</div>
+                            <div class="text-xs font-semibold text-white/55">مصادر موثوقة ومراجعة</div>
+                        </div>
                     </div>
-                @endif
-
-                <div class="rounded-3xl border border-white/15 bg-white/10 p-5">
-                    <h4 class="mb-3 text-xl font-black">{{ $footer['contact_title'] ?? 'اتصل بنا' }}</h4>
-                    <ul class="space-y-2 text-sm font-semibold text-white/75">
-                        <li>{{ $footer['contact_address'] ?? 'خدمة عملاء الصيدلية' }}</li>
-                        <li><a href="tel:{{ $footer['contact_phone'] ?? '0509095816' }}" class="hover:text-white">{{ $footer['contact_phone'] ?? '0509095816' }}</a></li>
-                        @if(!empty($footer['contact_email']))
-                            <li><a href="mailto:{{ $footer['contact_email'] }}" class="hover:text-white">{{ $footer['contact_email'] }}</a></li>
-                        @endif
-                    </ul>
+                    <div class="flex items-center gap-3 rounded-3xl bg-white/[0.06] p-4">
+                        <span class="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-400/15 text-cyan-200">
+                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 18V6a2 2 0 0 0-2-2H3v14h11Z"/><path d="M14 9h4l3 3v6h-7Z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+                        </span>
+                        <div>
+                            <div class="font-black">توصيل سريع</div>
+                            <div class="text-xs font-semibold text-white/55">خلال 24-48 ساعة</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-3xl bg-white/[0.06] p-4">
+                        <span class="grid h-12 w-12 place-items-center rounded-2xl bg-amber-400/15 text-amber-200">
+                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                        </span>
+                        <div>
+                            <div class="font-black">دفع آمن</div>
+                            <div class="text-xs font-semibold text-white/55">حماية كاملة للطلب</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-3xl bg-white/[0.06] p-4">
+                        <span class="grid h-12 w-12 place-items-center rounded-2xl bg-rose-400/15 text-rose-200">
+                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.11 4.2 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+                        </span>
+                        <div>
+                            <div class="font-black">دعم مستمر</div>
+                            <div class="text-xs font-semibold text-white/55">0509095816</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="mt-8 border-t border-white/15 pt-5 text-center text-sm font-semibold text-white/60">
-                {{ $footer['copyright'] ?? ('© ' . date('Y') . ' صيدلية د. محمد رمضان') }}
+                <div class="grid gap-5 lg:grid-cols-[1.15fr_.85fr_.85fr_1fr]">
+                    <div class="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-6">
+                        <div class="mb-4 flex items-center gap-3">
+                            <span class="grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-950/20">
+                                <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m10.5 20.5 10-10a4.95 4.95 0 0 0-7-7l-10 10a4.95 4.95 0 0 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+                            </span>
+                            <div>
+                                <h3 class="text-2xl font-black">{{ $footer['brand_title'] ?? 'صيدلية د. محمد رمضان' }}</h3>
+                                <p class="text-xs font-black text-emerald-200">رعاية موثوقة وتسوق أسرع</p>
+                            </div>
+                        </div>
+                        <p class="text-sm font-semibold leading-8 text-white/65">
+                            {{ $footer['about'] ?? 'منصة صيدلية إلكترونية حديثة لطلب الأدوية والمنتجات الصحية، مع متابعة للطلبات وتجربة شراء آمنة وسريعة.' }}
+                        </p>
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            <span class="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-black text-white/70">مرخصة</span>
+                            <span class="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-black text-white/70">منتجات أصلية</span>
+                            <span class="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-black text-white/70">توصيل موثوق</span>
+                        </div>
+                    </div>
+
+                    <div class="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-6">
+                        <h4 class="mb-4 text-xl font-black">{{ $footer['links_title'] ?? 'روابط مفيدة' }}</h4>
+                        <ul class="space-y-3 text-sm font-semibold text-white/65">
+                            <li><a class="flex items-center justify-between rounded-2xl px-3 py-2 transition hover:bg-white/10 hover:text-white" href="{{ route('store.home') }}"><span>الرئيسية</span><span>‹</span></a></li>
+                            <li><a class="flex items-center justify-between rounded-2xl px-3 py-2 transition hover:bg-white/10 hover:text-white" href="{{ route('store.products.index') }}"><span>كل المنتجات</span><span>‹</span></a></li>
+                            <li><a class="flex items-center justify-between rounded-2xl px-3 py-2 transition hover:bg-white/10 hover:text-white" href="{{ route('store.cart.index') }}"><span>السلة</span><span>‹</span></a></li>
+                            @if(($footer['show_pages'] ?? true) && !empty($footerPages) && $footerPages->count())
+                                @foreach($footerPages as $footerPage)
+                                    <li><a href="{{ route('store.pages.show', $footerPage->slug) }}" class="flex items-center justify-between rounded-2xl px-3 py-2 transition hover:bg-white/10 hover:text-white"><span>{{ $footerPage->title }}</span><span>‹</span></a></li>
+                                @endforeach
+                            @endif
+                        </ul>
+                    </div>
+
+                    <div class="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-6">
+                        <h4 class="mb-4 text-xl font-black">{{ $footer['contact_title'] ?? 'تواصل معنا' }}</h4>
+                        <ul class="space-y-3 text-sm font-semibold text-white/65">
+                            <li class="rounded-2xl bg-white/[0.06] px-3 py-3">{{ $footer['contact_address'] ?? 'خدمة عملاء الصيدلية' }}</li>
+                            <li><a href="tel:{{ $footer['contact_phone'] ?? '0509095816' }}" class="block rounded-2xl bg-white/[0.06] px-3 py-3 hover:bg-white/10 hover:text-white">{{ $footer['contact_phone'] ?? '0509095816' }}</a></li>
+                            <li><a href="mailto:{{ $footer['contact_email'] ?? 'support@pharmacy.local' }}" class="block rounded-2xl bg-white/[0.06] px-3 py-3 hover:bg-white/10 hover:text-white">{{ $footer['contact_email'] ?? 'support@pharmacy.local' }}</a></li>
+                        </ul>
+                    </div>
+
+                    @if(($footer['newsletter_enabled'] ?? true))
+                        <div class="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-6">
+                            <h4 class="mb-2 text-xl font-black">{{ $footer['newsletter_title'] ?? 'النشرة الإخبارية' }}</h4>
+                            <p class="mb-4 text-sm font-semibold leading-7 text-white/65">{{ $footer['newsletter_text'] ?? 'اشترك لتصلك أحدث العروض والمنتجات الصحية والتنبيهات المهمة.' }}</p>
+                            <form class="space-y-3" onsubmit="event.preventDefault();">
+                                <input type="email" class="h-12 w-full rounded-2xl border border-white/15 bg-white px-4 text-sm font-bold text-slate-900 outline-none placeholder:text-slate-400" placeholder="البريد الإلكتروني">
+                                <button type="button" class="h-12 w-full rounded-2xl bg-amber-400 px-4 text-sm font-black text-slate-950 shadow-lg shadow-amber-950/20 transition hover:bg-amber-300">اشتراك</button>
+                            </form>
+                            <div class="mt-4 flex flex-wrap gap-2 text-xs font-black text-white/55">
+                                <span class="rounded-full bg-white/[0.06] px-3 py-1">Visa</span>
+                                <span class="rounded-full bg-white/[0.06] px-3 py-1">Mastercard</span>
+                                <span class="rounded-full bg-white/[0.06] px-3 py-1">Cash</span>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="mt-8 flex flex-col gap-4 border-t border-white/10 pt-5 text-sm font-semibold text-white/55 md:flex-row md:items-center md:justify-between">
+                    <div>{{ $footer['copyright'] ?? ('© ' . date('Y') . ' صيدلية د. محمد رمضان') }}</div>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="rounded-full bg-white/[0.06] px-3 py-1">سياسة الخصوصية</span>
+                        <span class="rounded-full bg-white/[0.06] px-3 py-1">الشروط والأحكام</span>
+                        <span class="rounded-full bg-white/[0.06] px-3 py-1">دفع آمن وشحن موثوق</span>
+                    </div>
+                </div>
             </div>
         </div>
     </footer>
