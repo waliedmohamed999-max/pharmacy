@@ -86,7 +86,7 @@ class ClientAppController extends Controller
         $data = $request->validate([
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'q' => ['nullable', 'string', 'max:120'],
-            'sort' => ['nullable', 'in:price_asc,price_desc,name_asc,newest'],
+            'sort' => ['nullable', 'in:price_asc,price_desc,name_asc,newest,latest'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
@@ -110,6 +110,7 @@ class ClientAppController extends Controller
             'price_asc' => $products->orderBy('price'),
             'price_desc' => $products->orderByDesc('price'),
             'name_asc' => $products->orderBy('name'),
+            'newest', 'latest' => $products->latest(),
             default => $products->latest(),
         };
 

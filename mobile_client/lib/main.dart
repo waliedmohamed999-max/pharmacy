@@ -839,7 +839,7 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   final search = TextEditingController();
-  String sort = 'latest';
+  String sort = 'newest';
   bool inStockOnly = false;
   bool grid = true;
   CategoryItem? selectedCategory;
@@ -947,12 +947,12 @@ class FilterPanel extends StatelessWidget {
                     initialValue: sort,
                     decoration: const InputDecoration(labelText: 'الترتيب'),
                     items: const [
-                      DropdownMenuItem(value: 'latest', child: Text('الأحدث')),
+                      DropdownMenuItem(value: 'newest', child: Text('الأحدث')),
                       DropdownMenuItem(value: 'price_asc', child: Text('الأقل سعرا')),
                       DropdownMenuItem(value: 'price_desc', child: Text('الأعلى سعرا')),
                       DropdownMenuItem(value: 'name_asc', child: Text('الاسم')),
                     ],
-                    onChanged: (value) => onSort(value ?? 'latest'),
+                    onChanged: (value) => onSort(value ?? 'newest'),
                   ),
                 ),
                 const SizedBox(width: 10),
