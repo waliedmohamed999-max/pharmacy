@@ -1277,6 +1277,7 @@ class ProductDetailsScreen extends StatefulWidget {
 
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   late Future<Product> future;
+  int selectedImage = 0;
 
   @override
   void initState() {
@@ -1288,46 +1289,224 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   Widget build(BuildContext context) {
     final cart = CartScope.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('تفاصيل المنتج')),
       body: FutureBuilder<Product>(
         future: future,
         builder: (context, snapshot) {
           final product = snapshot.data ?? widget.product;
           final images = product.images.isEmpty ? [product.image] : product.images;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              SizedBox(
-                height: 330,
-                child: PageView.builder(
-                  itemCount: images.length,
-                  itemBuilder: (context, index) => Container(margin: const EdgeInsets.symmetric(horizontal: 3), decoration: softCard(context), child: Padding(padding: const EdgeInsets.all(20), child: AppImage(url: images[index], fit: BoxFit.contain))),
+          final activeImage = images[selectedImage.clamp(0, images.length - 1)];
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: ProductDetailsHero(product: product, image: activeImage, onBack: () => Navigator.of(context).pop())),
+              SliverToBoxAdapter(
+                child: ProductImageThumbs(
+                  images: images,
+                  selected: selectedImage,
+                  onSelect: (index) => setState(() => selectedImage = index),
                 ),
               ),
-              const SizedBox(height: 18),
-              Text(product.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 8),
-              Wrap(spacing: 8, runSpacing: 8, children: [Chip(label: Text(product.categoryName.isEmpty ? 'منتج صيدلي' : product.categoryName)), Chip(label: Text(product.inStock ? 'متوفر ${product.availableQty}' : 'غير متاح')), if (product.discountPercent > 0) Chip(label: Text('خصم ${product.discountPercent}%')), const Chip(label: Text('منتج أصلي'))]),
-              const SizedBox(height: 16),
-              Text(money(product.price), style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
-              if (product.comparePrice != null && product.comparePrice! > product.price) Text(money(product.comparePrice!), style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 18),
-              Text(product.description.isEmpty ? 'منتج صيدلي موثوق متاح للطلب من التطبيق، ويتم ربط الطلب مباشرة بلوحة التحكم والمخزون.' : product.description, style: const TextStyle(height: 1.8, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 96),
+              SliverToBoxAdapter(child: ProductDetailsInfo(product: product)),
+              const SliverToBoxAdapter(child: ProductGuarantees()),
+              SliverToBoxAdapter(child: ProductDescriptionCard(product: product)),
+              const SliverToBoxAdapter(child: SizedBox(height: 106)),
             ],
           );
         },
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(16),
-        child: FilledButton.icon(
-          onPressed: widget.product.inStock ? () => cart.add(widget.product) : null,
-          icon: const Icon(Icons.add_shopping_cart),
-          label: Text(widget.product.inStock ? 'إضافة للسلة - ${money(widget.product.price)}' : 'غير متاح حاليا'),
+        child: FutureBuilder<Product>(
+          future: future,
+          builder: (context, snapshot) {
+            final product = snapshot.data ?? widget.product;
+            return Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: softCard(context),
+                  child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text('الإجمالي', style: mutedStyle(context, 11)), Text(money(product.price), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 17))]),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: product.inStock ? () => cart.add(product) : null,
+                    icon: const Icon(Icons.add_shopping_cart),
+                    label: Text(product.inStock ? 'إضافة للسلة' : 'غير متاح حاليا'),
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
+}
+
+class ProductDetailsHero extends StatelessWidget {
+  const ProductDetailsHero({required this.product, required this.image, required this.onBack, super.key});
+  final Product product;
+  final String image;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 10, 14, 18),
+        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff064e3b), Color(0xff059669)])),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                IconButton.filledTonal(
+                  onPressed: onBack,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: .16), foregroundColor: Colors.white),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18))),
+                Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)), child: const Text('Rx', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              height: 260,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .14), blurRadius: 28, offset: const Offset(0, 14))]),
+              child: Stack(
+                children: [
+                  Center(child: AppImage(url: image, fit: BoxFit.contain)),
+                  if (product.discountPercent > 0)
+                    Positioned(top: 0, right: 0, child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(99)), child: Text('خصم ${product.discountPercent}%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class ProductImageThumbs extends StatelessWidget {
+  const ProductImageThumbs({required this.images, required this.selected, required this.onSelect, super.key});
+  final List<String> images;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    if (images.length <= 1) return const SizedBox(height: 12);
+    return SizedBox(
+      height: 88,
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        scrollDirection: Axis.horizontal,
+        itemCount: images.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final active = selected == index;
+          return InkWell(
+            onTap: () => onSelect(index),
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              width: 74,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: active ? Theme.of(context).colorScheme.primary.withValues(alpha: .10) : Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: active ? Theme.of(context).colorScheme.primary : const Color(0xffdbe7ef))),
+              child: AppImage(url: images[index], fit: BoxFit.contain),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ProductDetailsInfo extends StatelessWidget {
+  const ProductDetailsInfo({required this.product, super.key});
+  final Product product;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(product.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900, height: 1.25)),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Chip(label: Text(product.categoryName.isEmpty ? 'منتج صيدلي' : product.categoryName), avatar: const Icon(Icons.category_outlined, size: 17)),
+                  Chip(label: Text(product.inStock ? 'متوفر ${product.availableQty}' : 'غير متاح'), avatar: const Icon(Icons.inventory_2_outlined, size: 17)),
+                  if (product.discountPercent > 0) Chip(label: Text('خصم ${product.discountPercent}%'), avatar: const Icon(Icons.local_offer_outlined, size: 17)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(money(product.price), style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
+                  const SizedBox(width: 10),
+                  if (product.comparePrice != null && product.comparePrice! > product.price) Text(money(product.comparePrice!), style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class ProductGuarantees extends StatelessWidget {
+  const ProductGuarantees({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      [Icons.verified_user_outlined, 'أصلي'],
+      [Icons.local_shipping_outlined, 'توصيل'],
+      [Icons.support_agent_outlined, 'صيدلي'],
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      child: Row(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
+                decoration: softCard(context),
+                child: Column(children: [Icon(items[i][0] as IconData, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 5), Text(items[i][1] as String, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12))]),
+              ),
+            ),
+            if (i != items.length - 1) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class ProductDescriptionCard extends StatelessWidget {
+  const ProductDescriptionCard({required this.product, super.key});
+  final Product product;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('وصف المنتج', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            const SizedBox(height: 8),
+            Text(product.description.isEmpty ? 'منتج صيدلي موثوق متاح للطلب من التطبيق، ويتم ربط الطلب مباشرة بلوحة التحكم والمخزون.' : product.description, style: const TextStyle(height: 1.8, fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      );
 }
 
 class CartScreen extends StatelessWidget {
@@ -1569,22 +1748,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool loading = false;
 
   @override
+  void dispose() {
+    name.dispose();
+    phone.dispose();
+    city.dispose();
+    address.dispose();
+    notes.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cart = CartScope.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('بيانات الطلب')),
       body: Form(
         key: formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            CheckoutStepHeader(total: cart.total, count: cart.count),
-            const SizedBox(height: 16),
-            field(name, 'اسم العميل', Icons.person_outline, required: true),
-            field(phone, 'رقم الجوال', Icons.phone_outlined, keyboard: TextInputType.phone, required: true),
-            field(city, 'المدينة', Icons.location_city_outlined),
-            field(address, 'العنوان التفصيلي', Icons.location_on_outlined, maxLines: 3),
-            field(notes, 'ملاحظات للصيدلية', Icons.note_alt_outlined, maxLines: 3),
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: CheckoutHero(total: cart.total, count: cart.count)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: softCard(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('بيانات الاستلام', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 19)),
+                      const SizedBox(height: 14),
+                      field(name, 'اسم العميل', Icons.person_outline, required: true),
+                      field(phone, 'رقم الجوال', Icons.phone_outlined, keyboard: TextInputType.phone, required: true),
+                      field(city, 'المدينة', Icons.location_city_outlined),
+                      field(address, 'العنوان التفصيلي', Icons.location_on_outlined, maxLines: 3),
+                      field(notes, 'ملاحظات للصيدلية', Icons.note_alt_outlined, maxLines: 3),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: CheckoutSafety()),
+            const SliverToBoxAdapter(child: SizedBox(height: 96)),
           ],
         ),
       ),
@@ -1593,7 +1797,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: FilledButton.icon(
           onPressed: loading ? null : () => submit(cart),
           icon: loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.check_circle_outline),
-          label: const Text('تأكيد الطلب'),
+          label: Text('تأكيد الطلب - ${money(cart.total)}'),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
         ),
       ),
     );
@@ -1635,16 +1840,53 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 }
 
-class CheckoutStepHeader extends StatelessWidget {
-  const CheckoutStepHeader({required this.total, required this.count, super.key});
+class CheckoutHero extends StatelessWidget {
+  const CheckoutHero({required this.total, required this.count, super.key});
   final double total;
   final int count;
+
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(18),
-        decoration: softCard(context),
-        child: Row(children: [const CircleIcon(icon: Icons.receipt_long), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('إتمام الطلب', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)), Text('$count منتج - ${money(total)}', style: mutedStyle(context, 13))]))]),
+        padding: EdgeInsets.fromLTRB(14, MediaQuery.paddingOf(context).top + 12, 14, 18),
+        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff064e3b), Color(0xff059669)])),
+        child: Row(
+          children: [
+            Container(width: 54, height: 54, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(18)), child: const Icon(Icons.verified_outlined, color: Colors.white)),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('إتمام الطلب', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 27)), Text('$count قطعة - ${money(total)}', style: TextStyle(color: Colors.white.withValues(alpha: .84), fontWeight: FontWeight.w800))])),
+          ],
+        ),
       );
+}
+
+class CheckoutSafety extends StatelessWidget {
+  const CheckoutSafety({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      [Icons.lock_outline_rounded, 'بياناتك محمية'],
+      [Icons.local_pharmacy_outlined, 'مراجعة صيدلي'],
+      [Icons.local_shipping_outlined, 'توصيل موثوق'],
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+      child: Row(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
+                decoration: softCard(context),
+                child: Column(children: [Icon(items[i][0] as IconData, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 5), Text(items[i][1] as String, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11))]),
+              ),
+            ),
+            if (i != items.length - 1) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class OrdersScreen extends StatefulWidget {
