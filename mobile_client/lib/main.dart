@@ -1347,6 +1347,7 @@ class ProductDetailsScreen extends StatefulWidget {
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   late Future<Product> future;
   int selectedImage = 0;
+  int qty = 1;
 
   @override
   void initState() {
@@ -1364,6 +1365,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           final product = snapshot.data ?? widget.product;
           final images = product.images.isEmpty ? [product.image] : product.images;
           final activeImage = images[selectedImage.clamp(0, images.length - 1)];
+          final maxQty = product.availableQty < 1 ? 1 : product.availableQty;
+          if (qty > maxQty) qty = maxQty;
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(child: ProductDetailsHero(product: product, image: activeImage, onBack: () => Navigator.of(context).pop())),
@@ -1375,7 +1378,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 ),
               ),
               SliverToBoxAdapter(child: ProductDetailsInfo(product: product)),
+              SliverToBoxAdapter(
+                child: ProductPurchasePanel(
+                  product: product,
+                  qty: qty,
+                  onDecrease: () => setState(() => qty = (qty - 1).clamp(1, maxQty)),
+                  onIncrease: () => setState(() => qty = (qty + 1).clamp(1, maxQty)),
+                ),
+              ),
               const SliverToBoxAdapter(child: ProductGuarantees()),
+              const SliverToBoxAdapter(child: ProductPharmacyTools()),
               SliverToBoxAdapter(child: ProductDescriptionCard(product: product)),
               const SliverToBoxAdapter(child: SizedBox(height: 106)),
             ],
@@ -1393,12 +1405,19 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: softCard(context),
-                  child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text('الإجمالي', style: mutedStyle(context, 11)), Text(money(product.price), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 17))]),
+                  child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text('الإجمالي', style: mutedStyle(context, 11)), Text(money(product.price * qty), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 17))]),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: product.inStock ? () => cart.add(product) : null,
+                    onPressed: product.inStock
+                        ? () {
+                            for (var i = 0; i < qty; i++) {
+                              cart.add(product);
+                            }
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تمت إضافة $qty للسلة')));
+                          }
+                        : null,
                     icon: const Icon(Icons.add_shopping_cart),
                     label: Text(product.inStock ? 'إضافة للسلة' : 'غير متاح حاليا'),
                     style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
@@ -1529,6 +1548,55 @@ class ProductDetailsInfo extends StatelessWidget {
       );
 }
 
+class ProductPurchasePanel extends StatelessWidget {
+  const ProductPurchasePanel({required this.product, required this.qty, required this.onDecrease, required this.onIncrease, super.key});
+  final Product product;
+  final int qty;
+  final VoidCallback onDecrease;
+  final VoidCallback onIncrease;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .10), borderRadius: BorderRadius.circular(16)), child: Icon(Icons.shopping_basket_outlined, color: Theme.of(context).colorScheme.primary)),
+                  const SizedBox(width: 10),
+                  const Expanded(child: Text('تجهيز الشراء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
+                  Text(product.inStock ? 'متاح الآن' : 'نفد المخزون', style: TextStyle(color: product.inStock ? Theme.of(context).colorScheme.primary : Colors.red, fontWeight: FontWeight.w900)),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(child: Text('الكمية المطلوبة', style: mutedStyle(context, 13))),
+                  QuantityStepper(value: qty, onChanged: (value) => value > qty ? onIncrease() : onDecrease()),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: const Color(0xffecfdf5), borderRadius: BorderRadius.circular(18)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.health_and_safety_outlined, color: Color(0xff059669)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('يراجع الصيدلي الطلب قبل التحضير للتأكد من ملاءمة المنتج وتوفره.', style: TextStyle(color: Colors.green.shade800, fontWeight: FontWeight.w800, height: 1.5))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
 class ProductGuarantees extends StatelessWidget {
   const ProductGuarantees({super.key});
 
@@ -1554,6 +1622,47 @@ class ProductGuarantees extends StatelessWidget {
             if (i != items.length - 1) const SizedBox(width: 8),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class ProductPharmacyTools extends StatelessWidget {
+  const ProductPharmacyTools({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const tools = [
+      (Icons.chat_bubble_outline_rounded, 'اسأل الصيدلي', 'استشارة قبل الطلب'),
+      (Icons.qr_code_scanner_rounded, 'مسح بديل', 'ابحث بالباركود'),
+      (Icons.notifications_active_outlined, 'تنبيه توفر', 'للمنتجات الناقصة'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: softCard(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('أدوات الصيدلية', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            const SizedBox(height: 12),
+            for (final tool in tools)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .045), borderRadius: BorderRadius.circular(18)),
+                child: Row(
+                  children: [
+                    Container(width: 38, height: 38, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .10), borderRadius: BorderRadius.circular(14)), child: Icon(tool.$1, color: Theme.of(context).colorScheme.primary, size: 20)),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(tool.$2, style: const TextStyle(fontWeight: FontWeight.w900)), Text(tool.$3, style: mutedStyle(context, 12))])),
+                    Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: Theme.of(context).colorScheme.primary),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
