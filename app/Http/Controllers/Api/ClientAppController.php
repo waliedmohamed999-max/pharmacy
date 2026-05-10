@@ -87,7 +87,7 @@ class ClientAppController extends Controller
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'q' => ['nullable', 'string', 'max:120'],
             'sort' => ['nullable', 'in:price_asc,price_desc,name_asc,newest,latest'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $products = $this->productsQuery()->with('category:id,name,name_ar,name_en,slug');

@@ -858,7 +858,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final query = <String, String>{
       'q': search.text,
       'sort': sort,
-      'per_page': '60',
+      'per_page': '50',
       if (selectedCategory != null) 'category_id': '${selectedCategory!.id}',
     };
     final json = await widget.api.getJson('/products', query);
