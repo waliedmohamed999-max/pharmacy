@@ -10,6 +10,9 @@ const configuredApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue
 
 String get apiBaseUrl {
   if (configuredApiBaseUrl.isNotEmpty) return configuredApiBaseUrl;
+  if (kReleaseMode) {
+    throw StateError('API_BASE_URL is required for release builds.');
+  }
   return kIsWeb ? 'http://127.0.0.1:8000/api/mobile' : 'http://10.0.2.2:8000/api/mobile';
 }
 
@@ -87,19 +90,34 @@ class ApiClient {
   final http.Client _client = http.Client();
 
   Future<Map<String, dynamic>> getJson(String path, [Map<String, String>? query]) async {
-    final uri = Uri.parse('$apiBaseUrl$path').replace(queryParameters: query?..removeWhere((_, value) => value.trim().isEmpty));
-    final response = await _client.get(uri, headers: {'Accept': 'application/json'});
+    final uri = _secureUri(path).replace(queryParameters: query?..removeWhere((_, value) => value.trim().isEmpty));
+    final response = await _client.get(uri, headers: _headers()).timeout(const Duration(seconds: 20));
     return _decode(response);
   }
 
   Future<Map<String, dynamic>> postJson(String path, Map<String, dynamic> body) async {
     final response = await _client.post(
-      Uri.parse('$apiBaseUrl$path'),
-      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      _secureUri(path),
+      headers: _headers(json: true),
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 25));
     return _decode(response);
   }
+
+  Uri _secureUri(String path) {
+    final uri = Uri.parse('$apiBaseUrl$path');
+    final localHosts = {'127.0.0.1', 'localhost', '10.0.2.2'};
+    if (kReleaseMode && uri.scheme != 'https' && !localHosts.contains(uri.host)) {
+      throw ApiException('اتصال غير آمن. يجب استخدام HTTPS في نسخة الإنتاج.');
+    }
+    return uri;
+  }
+
+  Map<String, String> _headers({bool json = false}) => {
+        'Accept': 'application/json',
+        'X-Client': 'flutter-customer-app',
+        if (json) 'Content-Type': 'application/json',
+      };
 
   Map<String, dynamic> _decode(http.Response response) {
     final decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body) as Map<String, dynamic>;

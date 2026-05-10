@@ -83,29 +83,37 @@ class ClientAppController extends Controller
 
     public function products(Request $request, InventoryService $inventory): JsonResponse
     {
+        $data = $request->validate([
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'q' => ['nullable', 'string', 'max:120'],
+            'sort' => ['nullable', 'in:price_asc,price_desc,name_asc,newest'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+
         $products = $this->productsQuery()->with('category:id,name,name_ar,name_en,slug');
 
-        if ($request->filled('category_id')) {
-            $products->where('category_id', (int) $request->input('category_id'));
+        if (!empty($data['category_id'])) {
+            $products->where('category_id', (int) $data['category_id']);
         }
 
-        $search = trim((string) $request->input('q', ''));
+        $search = trim((string) ($data['q'] ?? ''));
         if ($search !== '') {
-            $products->where(function (Builder $query) use ($search): void {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
+            $escapedSearch = $this->escapeLike($search);
+            $products->where(function (Builder $query) use ($escapedSearch): void {
+                $query->where('name', 'like', "%{$escapedSearch}%")
+                    ->orWhere('sku', 'like', "%{$escapedSearch}%")
+                    ->orWhere('barcode', 'like', "%{$escapedSearch}%");
             });
         }
 
-        match ($request->input('sort')) {
+        match ($data['sort'] ?? 'newest') {
             'price_asc' => $products->orderBy('price'),
             'price_desc' => $products->orderByDesc('price'),
             'name_asc' => $products->orderBy('name'),
             default => $products->latest(),
         };
 
-        $paginated = $products->paginate((int) $request->integer('per_page', 20));
+        $paginated = $products->paginate((int) ($data['per_page'] ?? 20));
 
         return response()->json([
             'data' => $this->productsPayload($paginated->getCollection(), $inventory),
@@ -138,7 +146,7 @@ class ClientAppController extends Controller
     {
         $data = $request->validate([
             'customer_name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'regex:/^[0-9+()\-\s]{7,20}$/'],
             'city' => ['nullable', 'string', 'max:120'],
             'address' => ['nullable', 'string', 'max:500'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -287,6 +295,10 @@ class ClientAppController extends Controller
 
     public function orders(Request $request): JsonResponse
     {
+        $request->validate([
+            'phone' => ['required', 'string', 'regex:/^[0-9+()\-\s]{7,20}$/'],
+        ]);
+
         $phone = trim((string) $request->input('phone'));
         abort_if($phone === '', 422, 'رقم الجوال مطلوب.');
 
@@ -302,6 +314,10 @@ class ClientAppController extends Controller
 
     public function order(Request $request, Order $order): JsonResponse
     {
+        $request->validate([
+            'phone' => ['required', 'string', 'regex:/^[0-9+()\-\s]{7,20}$/'],
+        ]);
+
         abort_unless($order->phone === (string) $request->input('phone'), 403);
 
         return response()->json(['data' => $this->orderPayload($order->load('items'))]);
@@ -310,6 +326,11 @@ class ClientAppController extends Controller
     private function productsQuery(): Builder
     {
         return Product::query()->where('is_active', true);
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     private function bestSellers(int $limit)

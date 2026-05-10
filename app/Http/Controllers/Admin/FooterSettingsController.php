@@ -35,8 +35,12 @@ class FooterSettingsController extends Controller
         $data = $request->validated();
         $links = collect($data['links'] ?? [])
             ->filter(function (array $link) {
-                return !empty($link['label']) && !empty($link['url']);
+                return !empty($link['label']) && $this->isSafeFooterUrl((string) ($link['url'] ?? ''));
             })
+            ->map(fn (array $link) => [
+                'label' => trim((string) $link['label']),
+                'url' => trim((string) $link['url']),
+            ])
             ->values()
             ->all();
 
@@ -62,5 +66,19 @@ class FooterSettingsController extends Controller
     {
         $decoded = json_decode($json ?: '[]', true);
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private function isSafeFooterUrl(string $url): bool
+    {
+        $url = trim($url);
+
+        if ($url === '') {
+            return false;
+        }
+
+        return str_starts_with($url, '/')
+            || str_starts_with($url, 'https://')
+            || str_starts_with($url, 'mailto:')
+            || str_starts_with($url, 'tel:');
     }
 }

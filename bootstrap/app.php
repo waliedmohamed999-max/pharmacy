@@ -14,15 +14,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'permission' => \App\Http\Middleware\EnsurePermission::class,
+            'admin.access' => \App\Http\Middleware\EnsureAdminAccess::class,
         ]);
 
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
-        // Local fallback to avoid persistent 419 on login in this environment.
-        $middleware->validateCsrfTokens(except: [
-            'login',
+        $middleware->api(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

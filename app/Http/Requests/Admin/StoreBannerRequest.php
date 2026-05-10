@@ -16,9 +16,9 @@ class StoreBannerRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'subtitle' => 'nullable|string|max:255',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'link_type' => 'required|in:product,category,url',
-            'link_target' => 'nullable|string|max:255',
+            'link_target' => 'nullable|string|max:2048',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'is_active' => 'nullable|boolean',

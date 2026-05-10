@@ -53,7 +53,7 @@ Route::get('/checkout', [CheckoutController::class, 'index'])->name('store.check
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('store.checkout.store');
 Route::view('/order-success', 'store.order-success')->name('store.order.success');
 
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'admin.access'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
     Route::post('dashboard/home-settings', [DashboardController::class, 'updateHomeSettings'])->name('dashboard.home-settings');
 

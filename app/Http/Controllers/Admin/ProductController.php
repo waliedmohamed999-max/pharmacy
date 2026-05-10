@@ -340,7 +340,7 @@ class ProductController extends Controller
 
             Product::with('category')->orderBy('id')->chunk(200, function ($products) use ($handle) {
                 foreach ($products as $product) {
-                    fputcsv($handle, [
+                    fputcsv($handle, array_map([$this, 'csvSafe'], [
                         $product->id,
                         $product->name,
                         $product->sku,
@@ -355,7 +355,7 @@ class ProductController extends Controller
                         $product->short_description,
                         $product->description,
                         $product->primary_image,
-                    ]);
+                    ]));
                 }
             });
 
@@ -417,7 +417,7 @@ class ProductController extends Controller
                 'tags' => trim((string)($row['tags'] ?? '')) ?: null,
                 'short_description' => trim((string)($row['short_description'] ?? '')) ?: null,
                 'description' => trim((string)($row['description'] ?? '')) ?: null,
-                'primary_image' => trim((string)($row['primary_image'] ?? '')) ?: $this->realProductImageUrl($name),
+                'primary_image' => $this->safeImportedImage((string)($row['primary_image'] ?? ''), $name),
             ];
 
             if ($product) {
@@ -750,5 +750,29 @@ class ProductController extends Controller
     {
         $normalized = strtolower(trim((string)$value));
         return in_array($normalized, ['1', 'true', 'yes', 'on', 'active'], true);
+    }
+
+    private function safeImportedImage(string $value, string $name): string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return $this->realProductImageUrl($name);
+        }
+
+        if (str_starts_with($value, 'https://') || str_starts_with($value, 'images/')) {
+            return $value;
+        }
+
+        return $this->realProductImageUrl($name);
+    }
+
+    private function csvSafe(mixed $value): mixed
+    {
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        return preg_match('/^[=+\-@]/', $value) ? "'".$value : $value;
     }
 }

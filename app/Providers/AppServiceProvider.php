@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Models\Page;
 use App\Models\StoreSetting;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -23,6 +26,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('mobile-api', function (Request $request) {
+            $phone = (string) $request->input('phone', '');
+            $key = $phone !== '' ? sha1($phone) : (string) $request->ip();
+
+            return [
+                Limit::perMinute(90)->by((string) $request->ip()),
+                Limit::perMinute(20)->by($key),
+            ];
+        });
+
         View::composer('store.layouts.app', function ($view) {
             $pages = collect();
             $footerSettings = [

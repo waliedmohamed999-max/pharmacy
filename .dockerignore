@@ -1,0 +1,14 @@
+.git
+.env
+node_modules
+vendor
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+mobile_client/build
+public/build
+database/*.sqlite
+*.log
+*.sql
+*.zip

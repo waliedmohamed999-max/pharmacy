@@ -29,7 +29,7 @@ class UpdateFooterSettingsRequest extends FormRequest
             'footer_copyright' => 'nullable|string|max:255',
             'links' => 'nullable|array',
             'links.*.label' => 'nullable|string|max:100',
-            'links.*.url' => 'nullable|url|max:2048',
+            'links.*.url' => 'nullable|string|max:2048',
         ];
     }
 }

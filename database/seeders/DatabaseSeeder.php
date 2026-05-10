@@ -13,6 +13,7 @@ use App\Models\StoreSetting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -33,6 +34,16 @@ class DatabaseSeeder extends Seeder
             ['email' => 'admin@drpharmacy.test'],
             ['name' => 'مدير النظام', 'password' => Hash::make('password')]
         );
+
+        User::query()
+            ->where('email', 'admin@drpharmacy.test')
+            ->update([
+                'email' => (string) env('ADMIN_EMAIL', 'admin@drpharmacy.test'),
+                'name' => (string) env('ADMIN_NAME', 'System Administrator'),
+                'role' => 'admin',
+                'permissions_json' => [],
+                'password' => Hash::make((string) env('ADMIN_PASSWORD', Str::random(40))),
+            ]);
 
         StoreSetting::setValue('home_banner_autoplay', '1');
         StoreSetting::setValue('footer_enabled', '1');

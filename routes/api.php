@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\ClientAppController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('mobile')->name('api.mobile.')->group(function () {
+Route::prefix('mobile')->middleware('throttle:mobile-api')->name('api.mobile.')->group(function () {
     Route::get('home', [ClientAppController::class, 'home'])->name('home');
     Route::get('categories', [ClientAppController::class, 'categories'])->name('categories');
     Route::get('products', [ClientAppController::class, 'products'])->name('products');
