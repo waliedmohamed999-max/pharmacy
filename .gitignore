@@ -26,6 +26,7 @@
 /mobile_client/build
 /mobile_client/.flutter-plugins
 /mobile_client/.flutter-plugins-dependencies
+/vercel-static
 Homestead.json
 Homestead.yaml
 Thumbs.db
