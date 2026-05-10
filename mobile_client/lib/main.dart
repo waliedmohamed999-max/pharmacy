@@ -331,6 +331,13 @@ class _ClientShellState extends State<ClientShell> {
       ProductsScreen(api: api),
       CartScreen(api: api),
       OrdersScreen(api: api),
+      SettingsScreen(
+        api: api,
+        onToggleTheme: widget.onToggleTheme,
+        onOpenProducts: () => setState(() => index = 1),
+        onOpenCart: () => setState(() => index = 2),
+        onOpenOrders: () => setState(() => index = 3),
+      ),
     ];
 
     return AnimatedBuilder(
@@ -350,11 +357,321 @@ class _ClientShellState extends State<ClientShell> {
               label: 'السلة',
             ),
             const NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'طلباتي'),
+            const NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'الإعدادات'),
           ],
         ),
       ),
     );
   }
+}
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({
+    required this.api,
+    required this.onToggleTheme,
+    required this.onOpenProducts,
+    required this.onOpenCart,
+    required this.onOpenOrders,
+    super.key,
+  });
+  final ApiClient api;
+  final VoidCallback onToggleTheme;
+  final VoidCallback onOpenProducts;
+  final VoidCallback onOpenCart;
+  final VoidCallback onOpenOrders;
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final name = TextEditingController();
+  final phone = TextEditingController();
+  final email = TextEditingController();
+  final address = TextEditingController();
+  final allergy = TextEditingController();
+  bool saved = false;
+  bool orderUpdates = true;
+  bool offerAlerts = true;
+  bool refillReminder = false;
+
+  @override
+  void dispose() {
+    name.dispose();
+    phone.dispose();
+    email.dispose();
+    address.dispose();
+    allergy.dispose();
+    super.dispose();
+  }
+
+  int get completion {
+    final fields = [name.text, phone.text, email.text, address.text, allergy.text];
+    final filled = fields.where((value) => value.trim().isNotEmpty).length;
+    return ((filled / fields.length) * 100).round();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: SettingsHero(completion: completion, saved: saved)),
+          SliverToBoxAdapter(child: SettingsProfileCard(name: name, phone: phone, email: email, address: address, allergy: allergy, onChanged: () => setState(() => saved = false))),
+          SliverToBoxAdapter(
+            child: SettingsNotificationsCard(
+              orderUpdates: orderUpdates,
+              offerAlerts: offerAlerts,
+              refillReminder: refillReminder,
+              onOrderUpdates: (value) => setState(() => orderUpdates = value),
+              onOfferAlerts: (value) => setState(() => offerAlerts = value),
+              onRefillReminder: (value) => setState(() => refillReminder = value),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SettingsToolsGrid(
+              onOpenProducts: widget.onOpenProducts,
+              onOpenCart: widget.onOpenCart,
+              onOpenOrders: widget.onOpenOrders,
+              onToggleTheme: widget.onToggleTheme,
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 110),
+              child: FilledButton.icon(
+                onPressed: () {
+                  setState(() => saved = true);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ ملف العميل داخل التطبيق')));
+                },
+                icon: const Icon(Icons.verified_user_outlined),
+                label: const Text('حفظ ملف العميل'),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SettingsHero extends StatelessWidget {
+  const SettingsHero({required this.completion, required this.saved, super.key});
+  final int completion;
+  final bool saved;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 14, 16, 20),
+        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff064e3b), Color(0xff059669)])),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(width: 58, height: 58, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(22)), child: const Icon(Icons.manage_accounts_outlined, color: Colors.white, size: 30)),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('الإعدادات', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)), Text('ملف العميل وأدوات إدارة تجربة الشراء.', style: TextStyle(color: Colors.white.withValues(alpha: .82), fontWeight: FontWeight.w800))])),
+                if (saved) Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)), child: const Text('محفوظ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: .13), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.white.withValues(alpha: .16))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [const Expanded(child: Text('اكتمال الملف', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900))), Text('$completion%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900))]),
+                  const SizedBox(height: 10),
+                  ClipRRect(borderRadius: BorderRadius.circular(99), child: LinearProgressIndicator(value: completion / 100, minHeight: 8, color: Colors.white, backgroundColor: Colors.white.withValues(alpha: .20))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class SettingsProfileCard extends StatelessWidget {
+  const SettingsProfileCard({required this.name, required this.phone, required this.email, required this.address, required this.allergy, required this.onChanged, super.key});
+  final TextEditingController name;
+  final TextEditingController phone;
+  final TextEditingController email;
+  final TextEditingController address;
+  final TextEditingController allergy;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('ملف العميل', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+              const SizedBox(height: 4),
+              Text('احفظ البيانات الأساسية لتسريع الطلبات ومتابعتها.', style: mutedStyle(context, 13)),
+              const SizedBox(height: 14),
+              SettingsField(controller: name, label: 'الاسم الكامل', icon: Icons.person_outline_rounded, onChanged: onChanged),
+              SettingsField(controller: phone, label: 'رقم الجوال', icon: Icons.phone_iphone_rounded, keyboard: TextInputType.phone, onChanged: onChanged),
+              SettingsField(controller: email, label: 'البريد الإلكتروني', icon: Icons.alternate_email_rounded, keyboard: TextInputType.emailAddress, onChanged: onChanged),
+              SettingsField(controller: address, label: 'العنوان المختصر', icon: Icons.location_on_outlined, onChanged: onChanged),
+              SettingsField(controller: allergy, label: 'حساسية أو ملاحظات صحية', icon: Icons.health_and_safety_outlined, onChanged: onChanged),
+            ],
+          ),
+        ),
+      );
+}
+
+class SettingsField extends StatelessWidget {
+  const SettingsField({required this.controller, required this.label, required this.icon, required this.onChanged, this.keyboard, super.key});
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final VoidCallback onChanged;
+  final TextInputType? keyboard;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: TextField(
+          controller: controller,
+          keyboardType: keyboard,
+          onChanged: (_) => onChanged(),
+          decoration: InputDecoration(prefixIcon: Icon(icon), labelText: label),
+        ),
+      );
+}
+
+class SettingsNotificationsCard extends StatelessWidget {
+  const SettingsNotificationsCard({
+    required this.orderUpdates,
+    required this.offerAlerts,
+    required this.refillReminder,
+    required this.onOrderUpdates,
+    required this.onOfferAlerts,
+    required this.onRefillReminder,
+    super.key,
+  });
+  final bool orderUpdates;
+  final bool offerAlerts;
+  final bool refillReminder;
+  final ValueChanged<bool> onOrderUpdates;
+  final ValueChanged<bool> onOfferAlerts;
+  final ValueChanged<bool> onRefillReminder;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('تفضيلات ذكية', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+              const SizedBox(height: 10),
+              SettingsSwitch(icon: Icons.local_shipping_outlined, title: 'تحديثات الطلب والتوصيل', subtitle: 'إشعارات حالة الطلب لحظة بلحظة', value: orderUpdates, onChanged: onOrderUpdates),
+              SettingsSwitch(icon: Icons.local_offer_outlined, title: 'عروض الصيدلية', subtitle: 'تنبيه بالعروض والخصومات المهمة', value: offerAlerts, onChanged: onOfferAlerts),
+              SettingsSwitch(icon: Icons.event_repeat_outlined, title: 'تذكير إعادة الطلب', subtitle: 'مفيد للأدوية والمستلزمات المتكررة', value: refillReminder, onChanged: onRefillReminder),
+            ],
+          ),
+        ),
+      );
+}
+
+class SettingsSwitch extends StatelessWidget {
+  const SettingsSwitch({required this.icon, required this.title, required this.subtitle, required this.value, required this.onChanged, super.key});
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        secondary: CircleIcon(icon: icon),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: Text(subtitle, style: mutedStyle(context, 12)),
+        value: value,
+        onChanged: onChanged,
+      );
+}
+
+class SettingsToolsGrid extends StatelessWidget {
+  const SettingsToolsGrid({required this.onOpenProducts, required this.onOpenCart, required this.onOpenOrders, required this.onToggleTheme, super.key});
+  final VoidCallback onOpenProducts;
+  final VoidCallback onOpenCart;
+  final VoidCallback onOpenOrders;
+  final VoidCallback onToggleTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final tools = [
+      SettingsTool('كل المنتجات', 'تصفح وفلترة', Icons.medication_liquid_outlined, onOpenProducts),
+      SettingsTool('السلة', 'مراجعة الطلب', Icons.shopping_cart_outlined, onOpenCart),
+      SettingsTool('طلباتي', 'تتبع بالجوال', Icons.receipt_long_outlined, onOpenOrders),
+      SettingsTool('الوضع', 'فاتح / داكن', Icons.dark_mode_outlined, onToggleTheme),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: softCard(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('أدوات سريعة', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: tools.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.35),
+              itemBuilder: (context, index) => SettingsToolCard(tool: tools[index]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SettingsTool {
+  const SettingsTool(this.title, this.subtitle, this.icon, this.onTap);
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+class SettingsToolCard extends StatelessWidget {
+  const SettingsToolCard({required this.tool, super.key});
+  final SettingsTool tool;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: tool.onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .055), borderRadius: BorderRadius.circular(20)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleIcon(icon: tool.icon),
+              const Spacer(),
+              Text(tool.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
+              Text(tool.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 11)),
+            ],
+          ),
+        ),
+      );
 }
 
 class HomeScreen extends StatefulWidget {
