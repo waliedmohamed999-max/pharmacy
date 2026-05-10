@@ -1,8 +1,13 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
-    "installCommand": "npm install",
-    "buildCommand": "npm run build:vercel",
-    "outputDirectory": "vercel-static",
+    "installCommand": "composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction && npm install",
+    "buildCommand": "npm run build",
+    "functions": {
+        "api/index.php": {
+            "runtime": "vercel-php@0.7.4",
+            "maxDuration": 60
+        }
+    },
     "headers": [
         {
             "source": "/(.*)",
@@ -29,7 +34,7 @@
     "rewrites": [
         {
             "source": "/(.*)",
-            "destination": "/index.html"
+            "destination": "/api/index.php"
         }
     ]
 }

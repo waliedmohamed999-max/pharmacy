@@ -1,0 +1,15 @@
+.git
+.env
+node_modules
+vendor
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+mobile_client/build
+flutter_sdk
+database/*.sqlite
+vercel-static
+*.log
+*.sql
+*.zip
