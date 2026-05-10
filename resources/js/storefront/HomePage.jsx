@@ -746,30 +746,6 @@ function StorefrontFooter({ routes }) {
     );
 }
 
-function Footer({ routes }) {
-    return (
-        <footer className="mt-10 bg-slate-950 text-white">
-            <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 md:grid-cols-4">
-                <div>
-                    <div className="mb-3 flex items-center gap-2 text-xl font-black"><Pill /> صيدلية د. محمد رمضان</div>
-                    <p className="text-sm leading-7 text-slate-400">صيدلية إلكترونية بتجربة تسوق حديثة ومنتجات صحية موثوقة.</p>
-                </div>
-                {['الدعم', 'الأقسام', 'السياسات'].map((title) => (
-                    <div key={title}>
-                        <h3 className="mb-3 font-black">{title}</h3>
-                        <div className="space-y-2 text-sm text-slate-400">
-                            <a className="block hover:text-white" href={routes.home}>الرئيسية</a>
-                            <a className="block hover:text-white" href={routes.cart}>السلة</a>
-                            <a className="block hover:text-white" href={routes.login}>حسابي</a>
-                        </div>
-                    </div>
-                ))}
-            </div>
-            <div className="border-t border-white/10 py-4 text-center text-xs font-semibold text-slate-500">© {new Date().getFullYear()} صيدلية د. محمد رمضان - دفع آمن وشحن موثوق</div>
-        </footer>
-    );
-}
-
 function PreviewModal({ routes }) {
     const { previewProduct, closePreview } = useStorefront();
     return (
