@@ -1,14 +1,20 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-const apiBaseUrl = String.fromEnvironment(
+const configuredApiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:8000/api/mobile',
+  defaultValue: '',
 );
+
+String get apiBaseUrl {
+  if (configuredApiBaseUrl.isNotEmpty) return configuredApiBaseUrl;
+  return kIsWeb ? 'http://127.0.0.1:8000/api/mobile' : 'http://10.0.2.2:8000/api/mobile';
+}
 
 void main() {
   runApp(const PharmacyClientApp());

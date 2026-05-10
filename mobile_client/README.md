@@ -1,31 +1,40 @@
-# Pharmacy Client Mobile App
+# تطبيق العميل Flutter
 
-تطبيق Flutter للعملاء مرتبط بواجهة Laravel API:
+تطبيق Flutter للعملاء مربوط بواجهة Laravel API.
 
-- الرئيسية بنفس هوية المتجر.
-- الأقسام والمنتجات والعروض.
-- تفاصيل المنتج والصور والأسعار والمخزون.
-- سلة محلية داخل التطبيق.
-- إنشاء طلب عميل بالاسم ورقم الجوال والعنوان.
-- تتبع طلبات العميل برقم الجوال.
+## المتطلبات
 
-## التشغيل
+- شغل Laravel أولا على `http://127.0.0.1:8000`.
+- تأكد أن API يعمل من:
+
+```bash
+http://127.0.0.1:8000/api/mobile/home
+```
+
+## التشغيل على Chrome
 
 ```bash
 cd mobile_client
-flutter pub get
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/mobile
+..\flutter_sdk\bin\flutter.bat pub get
+..\flutter_sdk\bin\flutter.bat run -d chrome
 ```
 
-على جهاز حقيقي استبدل `10.0.2.2` بعنوان جهاز السيرفر داخل الشبكة، مثل:
+التطبيق يستخدم تلقائيا:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://192.168.1.10:8000/api/mobile
+http://127.0.0.1:8000/api/mobile
 ```
 
-إذا كان المجلد لا يحتوي منصات Android/iOS بعد، شغل:
+## التشغيل على محاكي Android
 
 ```bash
-flutter create .
-flutter pub get
+..\flutter_sdk\bin\flutter.bat run -d emulator --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/mobile
+```
+
+## التشغيل على موبايل حقيقي
+
+استبدل IP بعنوان جهاز السيرفر داخل نفس الشبكة:
+
+```bash
+..\flutter_sdk\bin\flutter.bat run --dart-define=API_BASE_URL=http://192.168.1.10:8000/api/mobile
 ```
