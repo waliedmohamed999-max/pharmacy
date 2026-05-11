@@ -455,6 +455,91 @@ function FinanceInventorySnapshot({ routes, kpis }) {
     );
 }
 
+function PrescriptionAndCareCenter({ routes, orders, products }) {
+    const waiting = orders.filter((order) => ['new', 'preparing'].includes(order.status)).slice(0, 4);
+    const careTools = [
+        ['مراجعة الروشتات', 'قائمة انتظار الصيدلي', FileText, routes.orders],
+        ['بدائل الدواء', 'اقتراح بدائل عند نقص المخزون', Pill, routes.products],
+        ['متابعة العملاء', 'إشعارات إعادة الطلب', Users, routes.customers],
+        ['سلامة التشغيل', 'صلاحيات وسجل إجراءات', ShieldCheck, routes.users],
+    ];
+
+    return (
+        <div className="grid gap-4 xl:grid-cols-[.95fr_1.05fr]">
+            <Card className="p-5">
+                <div className="mb-5 flex items-center justify-between">
+                    <div>
+                        <div className="text-sm font-black text-medical-600">Pharmacist Care Desk</div>
+                        <h2 className="text-xl font-black dark:text-white">مركز رعاية الصيدلي</h2>
+                    </div>
+                    <Badge className="bg-sky-50 text-sky-700">Clinical Ready</Badge>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                    {careTools.map(([title, subtitle, Icon, href]) => (
+                        <a key={title} href={href} className="rounded-[1.4rem] border border-slate-100 bg-slate-50 p-4 transition hover:-translate-y-1 hover:border-medical-200 hover:bg-medical-50 dark:border-slate-800 dark:bg-slate-950">
+                            <span className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-white text-medical-700 shadow-sm dark:bg-slate-900"><Icon size={19} /></span>
+                            <div className="font-black text-slate-900 dark:text-white">{title}</div>
+                            <div className="mt-1 text-xs font-bold text-slate-500">{subtitle}</div>
+                        </a>
+                    ))}
+                </div>
+            </Card>
+            <Card className="p-5">
+                <div className="mb-5 flex items-center justify-between">
+                    <div>
+                        <div className="text-sm font-black text-medical-600">Activity Timeline</div>
+                        <h2 className="text-xl font-black dark:text-white">نشاط اليوم</h2>
+                    </div>
+                    <Activity className="text-medical-600" size={20} />
+                </div>
+                <div className="space-y-3">
+                    {(waiting.length ? waiting : products.slice(0, 4)).map((item, index) => (
+                        <div key={`${item.id}-${index}`} className="flex items-center gap-3 rounded-3xl border border-slate-100 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950">
+                            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-medical-50 text-medical-700">{index + 1}</span>
+                            <div className="min-w-0 flex-1">
+                                <div className="line-clamp-1 text-sm font-black text-slate-800 dark:text-white">{item.customer || item.name}</div>
+                                <div className="text-xs font-bold text-slate-500">{item.status ? `طلب ${item.status} - ${item.date}` : `منتج متاح بسعر ${formatMoney(item.price)}`}</div>
+                            </div>
+                            {item.url && <a href={item.url} className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 hover:bg-medical-50 hover:text-medical-700 dark:bg-slate-900">فتح</a>}
+                        </div>
+                    ))}
+                </div>
+            </Card>
+        </div>
+    );
+}
+
+function InventoryDecisionMatrix({ routes, lowStock, products }) {
+    const stockValue = products.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+    const zeroStock = lowStock.filter((item) => Number(item.quantity || 0) <= 0).length;
+    const decisions = [
+        ['طلب شراء مقترح', lowStock.length, 'راجع الأصناف الأقل من حد الطلب', routes.inventory, 'rose'],
+        ['أرصدة صفرية', zeroStock, 'أصناف تحتاج إدخال أو إخفاء مؤقت', routes.inventory, 'amber'],
+        ['قيمة عينة الكتالوج', formatMoney(stockValue), 'تحليل تكلفة أحدث المنتجات', routes.finance, 'emerald'],
+    ];
+
+    return (
+        <Card className="p-5">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <div className="text-sm font-black text-medical-600">Inventory Decision Matrix</div>
+                    <h2 className="text-xl font-black dark:text-white">مصفوفة قرارات المخزون</h2>
+                </div>
+                <a href={routes.inventory}><Button>فتح مركز المخزون</Button></a>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+                {decisions.map(([label, value, desc, href, tone]) => (
+                    <a key={label} href={href} className="rounded-[1.4rem] border border-slate-100 bg-white p-4 transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-950">
+                        <div className={cn('mb-4 inline-flex rounded-full px-3 py-1 text-xs font-black', tone === 'rose' ? 'bg-rose-50 text-rose-700' : tone === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>{label}</div>
+                        <div className="text-3xl font-black dark:text-white">{value}</div>
+                        <div className="mt-2 text-sm font-bold text-slate-500">{desc}</div>
+                    </a>
+                ))}
+            </div>
+        </Card>
+    );
+}
+
 function PulseRow({ icon: Icon, label, value, tone }) {
     const toneClass = {
         emerald: 'bg-emerald-50 text-emerald-700',
@@ -472,6 +557,8 @@ function PulseRow({ icon: Icon, label, value, tone }) {
 
 function OrdersTable({ orders }) {
     const [sorting, setSorting] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const columns = useMemo(() => [
         { accessorKey: 'id', header: 'رقم الطلب', cell: ({ row }) => <a href={row.original.url} className="font-black text-medical-700">#{row.original.id}</a> },
         { accessorKey: 'customer', header: 'العميل' },
@@ -482,12 +569,35 @@ function OrdersTable({ orders }) {
         { accessorKey: 'total', header: 'الإجمالي', cell: ({ getValue }) => formatMoney(getValue()) },
         { accessorKey: 'date', header: 'التاريخ' },
     ], []);
-    const table = useReactTable({ data: orders, columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel() });
+    const filteredOrders = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+        return orders.filter((order) => {
+            const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+            const matchesSearch = !term || [order.id, order.customer, order.branch, order.delivery, order.payment].join(' ').toLowerCase().includes(term);
+            return matchesStatus && matchesSearch;
+        });
+    }, [orders, searchTerm, statusFilter]);
+    const table = useReactTable({ data: filteredOrders, columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel() });
     return (
         <Card className="overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5 dark:border-slate-800">
+            <div className="space-y-4 border-b border-slate-100 p-5 dark:border-slate-800">
                 <div><div className="text-sm font-black text-medical-600">Orders Management</div><h2 className="text-xl font-black dark:text-white">إدارة الطلبات</h2></div>
                 <div className="flex gap-2"><Button variant="secondary">Export CSV</Button><Button variant="secondary">Saved Views</Button></div>
+            </div>
+            <div className="grid gap-2 border-b border-slate-100 p-5 pt-0 md:grid-cols-[1fr_190px_150px] dark:border-slate-800">
+                <label className="relative">
+                    <Search className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+                    <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 bg-white pr-10 pl-3 text-sm font-bold outline-none transition focus:border-medical-300 focus:ring-4 focus:ring-medical-100 dark:border-slate-800 dark:bg-slate-950 dark:text-white" placeholder="بحث برقم الطلب، العميل، الفرع أو التوصيل" />
+                </label>
+                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-11 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black outline-none focus:border-medical-300 dark:border-slate-800 dark:bg-slate-950 dark:text-white">
+                    <option value="all">كل الحالات</option>
+                    <option value="new">قيد الانتظار</option>
+                    <option value="preparing">قيد التجهيز</option>
+                    <option value="shipped">تم الشحن</option>
+                    <option value="completed">مكتمل</option>
+                    <option value="cancelled">ملغي</option>
+                </select>
+                <div className="grid place-items-center rounded-2xl bg-slate-50 px-3 text-sm font-black text-slate-600 dark:bg-slate-900 dark:text-slate-300">{filteredOrders.length} طلب</div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -624,6 +734,8 @@ function AdminDashboard({ initialPayload }) {
                         <PharmacyWorkflowBoard routes={data.routes} orders={data.orders} lowStock={data.lowStock} />
                         <Analytics charts={data.charts} />
                         <FinanceInventorySnapshot routes={data.routes} kpis={data.kpis} />
+                        <InventoryDecisionMatrix routes={data.routes} lowStock={data.lowStock} products={data.products} />
+                        <PrescriptionAndCareCenter routes={data.routes} orders={data.orders} products={data.products} />
                         <div className="grid gap-4 xl:grid-cols-[1fr_360px]"><div className="space-y-4"><OrdersTable orders={data.orders} /><ProductGrid products={data.products} /></div><SideWidgets lowStock={data.lowStock} /></div>
                     </div>
                 </main>
