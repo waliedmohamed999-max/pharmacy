@@ -117,7 +117,7 @@
             <a href="{{ route('admin.pos.index') }}" class="admin-command-item"><span class="inline-flex items-center gap-3"><span class="admin-command-icon">POS</span> نقطة البيع السريعة</span><span class="text-xs text-slate-400">Cashier</span></a>
             <a href="{{ route('admin.inventory.index') }}" class="admin-command-item"><span class="inline-flex items-center gap-3"><span class="admin-command-icon">Inv</span> إدارة المخزون</span><span class="text-xs text-slate-400">Stock</span></a>
             <a href="{{ route('admin.home-sections.index') }}" class="admin-command-item"><span class="inline-flex items-center gap-3"><span class="admin-command-icon">UI</span> التحكم في الواجهة الخارجية</span><span class="text-xs text-slate-400">Storefront</span></a>
-            <a href="{{ route('admin.finance.index') }}" class="admin-command-item"><span class="inline-flex items-center gap-3"><span class="admin-command-icon">ج.م</span> النظام المالي والتقارير</span><span class="text-xs text-slate-400">Finance</span></a>
+            <a href="{{ route('admin.reports.index') }}" class="admin-command-item"><span class="inline-flex items-center gap-3"><span class="admin-command-icon">Rpt</span> مركز التقارير الموحد</span><span class="text-xs text-slate-400">Reports</span></a>
         </div>
     </div>
 </div>

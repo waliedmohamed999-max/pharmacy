@@ -31,9 +31,15 @@
         [
             'label' => 'المالية والإدارة',
             'items' => [
-                ['label' => 'تقارير المالية', 'route' => 'admin.finance.index', 'match' => 'admin.finance.*', 'icon' => 'wallet'],
-                ['label' => 'النظام المالي', 'route' => 'admin.accounting.index', 'match' => 'admin.accounting.*', 'icon' => 'receipt'],
+                ['label' => 'المركز المالي', 'route' => 'admin.finance.index', 'match' => 'admin.finance.*', 'icon' => 'wallet'],
+                ['label' => 'النظام المحاسبي', 'route' => 'admin.accounting.index', 'match' => 'admin.accounting.*', 'icon' => 'receipt'],
                 ['label' => 'الموظفون والصلاحيات', 'route' => 'admin.users.permissions.index', 'match' => 'admin.users.permissions.*', 'icon' => 'user-cog'],
+            ],
+        ],
+        [
+            'label' => 'التقارير والتحليلات',
+            'items' => [
+                ['label' => 'مركز التقارير', 'route' => 'admin.reports.index', 'match' => 'admin.reports.*', 'icon' => 'report'],
             ],
         ],
     ];
@@ -54,6 +60,7 @@
         'settings' => 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M4 12h2 M18 12h2 M12 4v2 M12 18v2',
         'wallet' => 'M4 7h16v13H4z M4 7a3 3 0 0 1 3-3h10v3 M17 14h.01',
         'user-cog' => 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M2 21v-2a4 4 0 0 1 4-4h5 M18 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6 M21 15h1 M14 15h1',
+        'report' => 'M4 4h16v16H4z M8 8h8 M8 12h3 M8 16h2 M14 12v4 M17 10v6',
     ];
 @endphp
 

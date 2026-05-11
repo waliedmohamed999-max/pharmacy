@@ -94,13 +94,18 @@ const navGroups = [
     {
         label: 'المالية والإدارة',
         items: [
-            ['Finance', 'تقارير المالية', Wallet, 'finance', null],
-            ['Accounting', 'النظام المالي', Receipt, 'accounting', null],
+            ['Finance', 'المركز المالي', Wallet, 'finance', null],
+            ['Accounting', 'النظام المحاسبي', Receipt, 'accounting', null],
             ['Employees', 'الموظفون والصلاحيات', UserCog, 'users', null],
             ['Permissions', 'الأدوار والصلاحيات', ShieldCheck, 'users', null],
-            ['Reports', 'التقارير', Activity, 'finance', null],
             ['Coupons', 'الكوبونات', Percent, 'banners', null],
             ['Notifications', 'الإشعارات', Bell, 'dashboard', 12],
+        ],
+    },
+    {
+        label: 'التقارير والتحليلات',
+        items: [
+            ['Reports', 'مركز التقارير', Activity, 'reports', null],
         ],
     },
 ];
@@ -275,7 +280,7 @@ function SmartOpsPanel({ routes, lowStock, orders }) {
     const ops = [
         ['نقطة بيع سريعة', 'وضع الكاشير والباركود', CreditCard, routes.pos, 'from-emerald-700 to-teal-500'],
         ['تسوية مخزون', 'حركات وتحديث كميات', Boxes, routes.inventory, 'from-cyan-700 to-sky-500'],
-        ['تقرير مالي', 'ربحية وتدفق نقدي', Wallet, routes.finance, 'from-slate-800 to-slate-600'],
+        ['مركز التقارير', 'مالية ومخزون ومبيعات', Activity, routes.reports || routes.finance, 'from-slate-800 to-slate-600'],
         ['إدارة الواجهة', 'بنرات وأقسام المتجر', LayoutTemplate, routes.homeSections, 'from-violet-700 to-fuchsia-500'],
     ];
     const activeOrders = orders.filter((order) => ['new', 'preparing'].includes(order.status)).length;
@@ -515,7 +520,7 @@ function InventoryDecisionMatrix({ routes, lowStock, products }) {
     const decisions = [
         ['طلب شراء مقترح', lowStock.length, 'راجع الأصناف الأقل من حد الطلب', routes.inventory, 'rose'],
         ['أرصدة صفرية', zeroStock, 'أصناف تحتاج إدخال أو إخفاء مؤقت', routes.inventory, 'amber'],
-        ['قيمة عينة الكتالوج', formatMoney(stockValue), 'تحليل تكلفة أحدث المنتجات', routes.finance, 'emerald'],
+        ['قيمة عينة الكتالوج', formatMoney(stockValue), 'تحليل تكلفة أحدث المنتجات', routes.reports || routes.finance, 'emerald'],
     ];
 
     return (
@@ -687,7 +692,7 @@ function CommandPalette({ routes }) {
         ['عرض الطلبات', routes.orders, ShoppingCart],
         ['إدارة المخزون', routes.inventory, Boxes],
         ['نقطة البيع', routes.pos, CreditCard],
-        ['التقارير المالية', routes.finance, Wallet],
+        ['مركز التقارير', routes.reports || routes.finance, Activity],
     ];
     return (
         <AnimatePresence>

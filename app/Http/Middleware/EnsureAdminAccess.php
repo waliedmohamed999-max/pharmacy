@@ -80,6 +80,10 @@ class EnsureAdminAccess
             return str_contains($name, 'export') ? 'finance.export' : 'finance.view';
         }
 
+        if (str_starts_with($name, 'admin.reports.')) {
+            return 'reports.view';
+        }
+
         if (str_starts_with($name, 'admin.accounting.reports.')) {
             return 'accounting.reports';
         }

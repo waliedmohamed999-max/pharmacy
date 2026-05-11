@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\HomeSectionController as AdminHomeSectionControll
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\ReportHubController as AdminReportHubController;
 use App\Http\Controllers\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Admin\PosController as AdminPosController;
 use App\Http\Controllers\Admin\UserPermissionController as AdminUserPermissionController;
@@ -92,6 +93,7 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->name('admin.')->gr
     Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
     Route::get('finance', [AdminFinanceController::class, 'index'])->name('finance.index');
     Route::get('finance/export', [AdminFinanceController::class, 'export'])->name('finance.export');
+    Route::get('reports', AdminReportHubController::class)->name('reports.index');
 
     Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/', [AdminAccountingController::class, 'index'])->name('index');
