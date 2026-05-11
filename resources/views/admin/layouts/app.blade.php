@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'لوحة الإدارة')</title>
+    <title>@yield('title', 'لوحة إدارة الصيدلية')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="page-shell admin-shell">
@@ -19,7 +19,7 @@
             <div class="min-w-0">
                 <div class="mb-1 text-xs font-black uppercase tracking-wide text-emerald-600">Pharmacy ERP</div>
                 <h1 class="page-title">@yield('page-title', 'لوحة التحكم')</h1>
-                <p class="page-subtitle">@yield('page-subtitle', 'إدارة المتجر بشكل احترافي وسريع')</p>
+                <p class="page-subtitle">@yield('page-subtitle', 'نظام تشغيل صيدلي لإدارة الطلبات والمخزون والمالية والواجهة الخارجية')</p>
             </div>
             <div class="shrink-0">@yield('page-actions')</div>
         </div>

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-    --bg: #f5f8fb;
+    --bg: #f4f8f7;
     --surface: #ffffff;
     --surface-soft: #f8fafc;
     --text: #0f172a;
@@ -11,12 +11,19 @@
     --line: #e2e8f0;
     --primary: #059669;
     --primary-700: #047857;
+    --primary-900: #064e3b;
+    --mint: #dffbf0;
+    --cyan-medical: #0891b2;
     --danger: #dc2626;
     --success: #059669;
     --warning: #d97706;
     --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.07);
+    --shadow-card: 0 16px 38px rgba(15, 23, 42, 0.065);
+    --shadow-lift: 0 22px 55px rgba(5, 150, 105, 0.14);
     --shadow-sm: 0 4px 16px rgba(15, 23, 42, 0.08);
     --radius: 18px;
+    --radius-lg: 26px;
+    --ease-premium: cubic-bezier(.22, 1, .36, 1);
 }
 
 html, body {
@@ -25,15 +32,15 @@ html, body {
 
 body {
     font-family: "Cairo", sans-serif;
-    background: radial-gradient(circle at 15% 5%, #f9fbff 0%, var(--bg) 50%, #e9eef7 100%);
+    background: radial-gradient(circle at 15% 5%, #ffffff 0%, var(--bg) 50%, #e6f1ee 100%);
     color: var(--text);
 }
 
 .admin-shell {
     background:
-        radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.16), transparent 34%),
-        radial-gradient(circle at 8% 12%, rgba(20, 184, 166, 0.12), transparent 32%),
-        #f5f8fb;
+        radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.18), transparent 34%),
+        radial-gradient(circle at 8% 12%, rgba(8, 145, 178, 0.10), transparent 32%),
+        linear-gradient(180deg, #f7fbfa 0%, #eef6f4 100%);
 }
 
 .page-shell {
@@ -43,9 +50,15 @@ body {
 .card-premium {
     background: rgba(255, 255, 255, 0.88);
     border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 1.35rem;
-    box-shadow: var(--shadow-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
     backdrop-filter: blur(14px);
+    transition: transform .22s var(--ease-premium), box-shadow .22s var(--ease-premium), border-color .22s var(--ease-premium);
+}
+
+.card-premium:hover {
+    border-color: rgba(167, 243, 208, .9);
+    box-shadow: var(--shadow-lift);
 }
 
 .soft-3d {
@@ -108,6 +121,8 @@ body {
 .table-wrap {
     @apply overflow-x-auto rounded-[1.25rem];
     border: 1px solid rgba(226, 232, 240, 0.95);
+    background: white;
+    box-shadow: var(--shadow-card);
 }
 
 .table-premium {
@@ -118,7 +133,7 @@ body {
 
 .table-premium thead th {
     @apply sticky top-0 z-10 whitespace-nowrap px-4 py-3 text-right text-xs font-black uppercase tracking-wide text-slate-500;
-    background: #f8fafc;
+    background: linear-gradient(180deg, #f8fafc, #f1f5f9);
     border-bottom: 1px solid rgba(226, 232, 240, 0.95);
 }
 
@@ -133,6 +148,42 @@ body {
 
 .table-premium tbody tr:hover {
     background: #ecfdf5;
+}
+
+.table-premium td:first-child,
+.table-premium th:first-child {
+    @apply pr-5;
+}
+
+.table-premium td:last-child,
+.table-premium th:last-child {
+    @apply pl-5;
+}
+
+form.card-premium,
+.form-panel {
+    @apply p-5;
+}
+
+label {
+    @apply font-black text-slate-700;
+}
+
+.input-premium,
+.select-premium,
+.textarea-premium {
+    min-height: 44px;
+}
+
+.admin-content-surface > .card-premium,
+.admin-content-surface > form,
+.admin-content-surface > .table-wrap {
+    animation: admin-fade-up .28s var(--ease-premium) both;
+}
+
+@keyframes admin-fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .kpi-card {
@@ -173,11 +224,14 @@ body {
 .sidebar-link {
     @apply flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-black transition;
     color: #475569;
+    min-height: 46px;
+    position: relative;
 }
 
 .sidebar-link:hover {
-    background: #ecfdf5;
+    background: linear-gradient(135deg, #ecfdf5, #f8fafc);
     color: #047857;
+    transform: translateX(-2px);
 }
 
 .sidebar-link.active {
@@ -192,11 +246,11 @@ body {
 }
 
 .admin-nav-icon {
-    @apply grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-slate-100 text-sm text-slate-600 transition;
+    @apply grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-100 text-sm text-slate-600 transition;
 }
 
 .admin-nav-icon svg {
-    @apply h-[17px] w-[17px];
+    @apply h-[18px] w-[18px];
     fill: none;
     stroke: currentColor;
     stroke-width: 2;
@@ -271,10 +325,84 @@ body {
 
 .admin-page-heading {
     @apply mb-5 flex flex-wrap items-end justify-between gap-3 rounded-[1.7rem] border border-white/70 bg-white/80 p-4 shadow-sm backdrop-blur;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,.92), rgba(236,253,245,.74)),
+        radial-gradient(circle at 10% 0%, rgba(20,184,166,.16), transparent 42%);
 }
 
 .admin-topbar {
     @apply sticky top-0 z-40 border-b border-white/70 bg-slate-50/85 backdrop-blur-xl;
+}
+
+.admin-topbar-inner {
+    @apply flex flex-wrap items-center gap-3 px-3 py-3 md:px-5 lg:px-6;
+}
+
+.admin-topbar-actions {
+    @apply mr-auto flex items-center gap-2;
+}
+
+.admin-global-search {
+    @apply order-3 flex-1 basis-full md:order-none md:basis-auto;
+}
+
+.admin-global-search .admin-global-search-input {
+    @apply h-12 w-full rounded-2xl border border-slate-200 bg-white pr-11 pl-20 text-sm font-bold text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400;
+}
+
+.admin-global-search .admin-global-search-input:focus {
+    @apply border-emerald-300 ring-4 ring-emerald-100;
+}
+
+.admin-search-icon {
+    @apply pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400;
+}
+
+.admin-global-search > .relative,
+.admin-global-search {
+    position: relative;
+}
+
+.admin-search-kbd {
+    @apply pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500 md:inline-flex;
+}
+
+.admin-icon-button {
+    @apply grid h-12 w-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700;
+}
+
+.admin-sync-pill {
+    @apply items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700;
+}
+
+.admin-user-card {
+    @apply items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm;
+}
+
+.admin-user-avatar {
+    @apply grid h-9 w-9 place-items-center rounded-xl bg-emerald-100 text-sm font-black text-emerald-800;
+}
+
+.admin-brand-card {
+    @apply mb-4 rounded-[1.7rem] bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-500 p-3 text-white shadow-xl shadow-emerald-900/10;
+}
+
+.admin-brand-logo {
+    @apply grid h-12 w-12 place-items-center rounded-2xl text-base font-black ring-1 ring-white/20;
+    background: rgba(255, 255, 255, .18);
+}
+
+.admin-brand-action {
+    @apply rounded-2xl px-3 py-2 text-center transition;
+    background: rgba(255, 255, 255, .14);
+}
+
+.admin-brand-action:hover {
+    background: rgba(255, 255, 255, .22);
+}
+
+.admin-workspace-card {
+    @apply mb-4 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/80 p-3;
 }
 
 @media (min-width: 1024px) {

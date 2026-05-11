@@ -115,7 +115,7 @@ function Sidebar({ routes }) {
         <aside className={cn('sticky top-0 hidden h-screen shrink-0 border-l border-slate-200 bg-white/90 p-3 backdrop-blur-xl transition-all dark:border-slate-800 dark:bg-slate-950/90 lg:block', collapsed ? 'w-[88px]' : 'w-[310px]')}>
             <div className="flex h-full flex-col">
                 <div className="mb-4 flex items-center gap-3 rounded-3xl bg-gradient-to-br from-medical-700 to-teal-500 p-3 text-white">
-                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/18"><Pill /></div>
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/20"><Pill /></div>
                     {!collapsed && (
                         <div className="min-w-0">
                             <div className="truncate text-sm font-black">صيدلية د. محمد رمضان</div>
@@ -270,6 +270,65 @@ function Analytics({ charts }) {
     );
 }
 
+function SmartOpsPanel({ routes, lowStock, orders }) {
+    const ops = [
+        ['نقطة بيع سريعة', 'وضع الكاشير والباركود', CreditCard, routes.pos, 'from-emerald-700 to-teal-500'],
+        ['تسوية مخزون', 'حركات وتحديث كميات', Boxes, routes.inventory, 'from-cyan-700 to-sky-500'],
+        ['تقرير مالي', 'ربحية وتدفق نقدي', Wallet, routes.finance, 'from-slate-800 to-slate-600'],
+        ['إدارة الواجهة', 'بنرات وأقسام المتجر', LayoutTemplate, routes.homeSections, 'from-violet-700 to-fuchsia-500'],
+    ];
+    const activeOrders = orders.filter((order) => ['new', 'preparing'].includes(order.status)).length;
+    return (
+        <div className="grid gap-4 xl:grid-cols-[1.25fr_.75fr]">
+            <Card className="overflow-hidden p-5">
+                <div className="mb-4 flex items-center justify-between">
+                    <div>
+                        <div className="text-sm font-black text-medical-600">Smart Workflows</div>
+                        <h2 className="text-xl font-black dark:text-white">مركز التشغيل السريع</h2>
+                    </div>
+                    <Badge className="bg-emerald-50 text-emerald-700">ERP Ready</Badge>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {ops.map(([title, subtitle, Icon, href, gradient]) => (
+                        <a key={title} href={href} className={cn('group rounded-[1.4rem] bg-gradient-to-br p-4 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-2xl', gradient)}>
+                            <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl bg-white/16 ring-1 ring-white/20"><Icon size={22} /></div>
+                            <div className="font-black">{title}</div>
+                            <div className="mt-1 text-xs font-bold text-white/75">{subtitle}</div>
+                        </a>
+                    ))}
+                </div>
+            </Card>
+
+            <Card className="p-5">
+                <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl font-black dark:text-white">نبض الصيدلية</h2>
+                    <Activity className="text-medical-600" size={20} />
+                </div>
+                <div className="grid gap-3">
+                    <PulseRow icon={ShoppingCart} label="طلبات قيد التنفيذ" value={activeOrders} tone="emerald" />
+                    <PulseRow icon={AlertTriangle} label="نواقص مخزون حرجة" value={lowStock.length} tone="rose" />
+                    <PulseRow icon={BriefcaseMedical} label="روشتات تحتاج مراجعة" value={14} tone="sky" />
+                </div>
+            </Card>
+        </div>
+    );
+}
+
+function PulseRow({ icon: Icon, label, value, tone }) {
+    const toneClass = {
+        emerald: 'bg-emerald-50 text-emerald-700',
+        rose: 'bg-rose-50 text-rose-700',
+        sky: 'bg-sky-50 text-sky-700',
+    }[tone] || 'bg-slate-50 text-slate-700';
+    return (
+        <div className="flex items-center gap-3 rounded-3xl border border-slate-100 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-900/70">
+            <span className={cn('grid h-11 w-11 place-items-center rounded-2xl', toneClass)}><Icon size={19} /></span>
+            <span className="flex-1 text-sm font-black text-slate-700 dark:text-slate-200">{label}</span>
+            <span className="text-xl font-black text-slate-950 dark:text-white">{value}</span>
+        </div>
+    );
+}
+
 function OrdersTable({ orders }) {
     const [sorting, setSorting] = useState([]);
     const columns = useMemo(() => [
@@ -419,6 +478,7 @@ function AdminDashboard({ initialPayload }) {
                             <div className="flex gap-2"><a href={data.routes.storefront}><Button variant="secondary">عرض المتجر</Button></a><a href={data.routes.createProduct}><Button><Plus size={18} /> منتج جديد</Button></a></div>
                         </div>
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{data.kpis.map((item, index) => <KpiCard key={item.key} item={item} index={index} />)}</div>
+                        <SmartOpsPanel routes={data.routes} lowStock={data.lowStock} orders={data.orders} />
                         <Analytics charts={data.charts} />
                         <div className="grid gap-4 xl:grid-cols-[1fr_360px]"><div className="space-y-4"><OrdersTable orders={data.orders} /><ProductGrid products={data.products} /></div><SideWidgets lowStock={data.lowStock} /></div>
                     </div>
