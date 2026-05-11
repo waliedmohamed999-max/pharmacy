@@ -38,6 +38,7 @@ import {
     UserCog,
     Users,
     Wallet,
+    Zap,
     X,
 } from 'lucide-react';
 import {
@@ -314,6 +315,146 @@ function SmartOpsPanel({ routes, lowStock, orders }) {
     );
 }
 
+function ExecutiveCommandCenter({ routes, orders, lowStock, products }) {
+    const pendingOrders = orders.filter((order) => ['new', 'preparing'].includes(order.status));
+    const stockRisk = lowStock.slice(0, 3);
+    const bestProducts = products.slice(0, 3);
+    const lanes = [
+        {
+            title: 'الطلبات النشطة',
+            subtitle: `${pendingOrders.length} طلب قيد التنفيذ`,
+            icon: ShoppingCart,
+            tone: 'emerald',
+            href: routes.orders,
+            items: pendingOrders.slice(0, 3).map((order) => `#${order.id} - ${order.customer}`),
+        },
+        {
+            title: 'مخاطر المخزون',
+            subtitle: `${lowStock.length} صنف يحتاج متابعة`,
+            icon: AlertTriangle,
+            tone: 'rose',
+            href: routes.inventory,
+            items: stockRisk.map((item) => `${item.name} (${item.quantity})`),
+        },
+        {
+            title: 'أداء المنتجات',
+            subtitle: 'الأصناف الأحدث في الكتالوج',
+            icon: Package,
+            tone: 'sky',
+            href: routes.products,
+            items: bestProducts.map((item) => `${item.name} - ${formatMoney(item.price)}`),
+        },
+    ];
+
+    return (
+        <div className="grid gap-4 xl:grid-cols-3">
+            {lanes.map((lane, index) => (
+                <motion.a
+                    key={lane.title}
+                    href={lane.href}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: .08 + index * .04 }}
+                    className="group overflow-hidden rounded-[1.7rem] border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-medical-200 hover:shadow-2xl hover:shadow-medical-900/10 dark:border-slate-800 dark:bg-slate-900"
+                >
+                    <div className="flex items-start justify-between gap-3">
+                        <div className={cn('grid h-12 w-12 place-items-center rounded-2xl', lane.tone === 'rose' ? 'bg-rose-50 text-rose-700' : lane.tone === 'sky' ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700')}>
+                            <lane.icon size={22} />
+                        </div>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500 transition group-hover:bg-medical-50 group-hover:text-medical-700 dark:bg-slate-800">فتح</span>
+                    </div>
+                    <div className="mt-4">
+                        <h3 className="text-lg font-black dark:text-white">{lane.title}</h3>
+                        <p className="mt-1 text-sm font-bold text-slate-500">{lane.subtitle}</p>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                        {lane.items.length ? lane.items.map((item) => (
+                            <div key={item} className="line-clamp-1 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 dark:bg-slate-950 dark:text-slate-300">{item}</div>
+                        )) : (
+                            <div className="rounded-2xl border border-dashed border-slate-200 px-3 py-5 text-center text-xs font-bold text-slate-400 dark:border-slate-700">لا توجد عناصر حرجة حاليا</div>
+                        )}
+                    </div>
+                </motion.a>
+            ))}
+        </div>
+    );
+}
+
+function PharmacyWorkflowBoard({ routes, orders, lowStock }) {
+    const stages = [
+        { label: 'استلام الطلب', count: orders.filter((order) => order.status === 'new').length, icon: Bell, color: 'bg-sky-500' },
+        { label: 'تجهيز الصيدلي', count: orders.filter((order) => order.status === 'preparing').length, icon: BriefcaseMedical, color: 'bg-indigo-500' },
+        { label: 'الشحن والتسليم', count: orders.filter((order) => order.status === 'shipped').length, icon: Truck, color: 'bg-violet-500' },
+        { label: 'نواقص حرجة', count: lowStock.length, icon: AlertTriangle, color: 'bg-rose-500' },
+    ];
+
+    return (
+        <Card className="overflow-hidden p-5">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <div className="text-sm font-black text-medical-600">Live Pharmacy Operations</div>
+                    <h2 className="text-xl font-black dark:text-white">مسار التشغيل اليومي</h2>
+                </div>
+                <div className="flex gap-2">
+                    <a href={routes.pos}><Button variant="secondary"><Zap size={16} /> POS</Button></a>
+                    <a href={routes.inventory}><Button variant="secondary">تحديث المخزون</Button></a>
+                </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-4">
+                {stages.map((stage, index) => (
+                    <div key={stage.label} className="relative rounded-[1.4rem] border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
+                        <div className="flex items-center justify-between">
+                            <span className={cn('grid h-11 w-11 place-items-center rounded-2xl text-white', stage.color)}><stage.icon size={19} /></span>
+                            <span className="text-2xl font-black dark:text-white">{stage.count}</span>
+                        </div>
+                        <div className="mt-4 text-sm font-black text-slate-700 dark:text-slate-200">{stage.label}</div>
+                        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white dark:bg-slate-800">
+                            <div className={cn('h-full rounded-full', stage.color)} style={{ width: `${Math.min(100, 24 + stage.count * 12)}%` }} />
+                        </div>
+                        {index < stages.length - 1 && <div className="absolute left-[-18px] top-1/2 hidden h-px w-8 bg-slate-200 md:block dark:bg-slate-700" />}
+                    </div>
+                ))}
+            </div>
+        </Card>
+    );
+}
+
+function FinanceInventorySnapshot({ routes, kpis }) {
+    const revenue = kpis.find((item) => item.key === 'revenue')?.value || 0;
+    const inventory = kpis.find((item) => item.key === 'inventoryValue')?.value || 0;
+    const lowStock = kpis.find((item) => item.key === 'lowStock')?.value || 0;
+    const cards = [
+        ['صافي الإيراد', formatMoney(revenue), 'تحليل فواتير المبيعات', routes.finance, Wallet],
+        ['قيمة المخزون', formatMoney(inventory), 'تكلفة الأصناف الحالية', routes.inventory, Boxes],
+        ['حد إعادة الطلب', new Intl.NumberFormat('ar-EG').format(lowStock), 'أصناف تحتاج قرار شراء', routes.inventory, AlertTriangle],
+    ];
+
+    return (
+        <Card className="p-5">
+            <div className="mb-5 flex items-center justify-between">
+                <div>
+                    <div className="text-sm font-black text-medical-600">Accounting + Inventory</div>
+                    <h2 className="text-xl font-black dark:text-white">ملخص المدير المالي والتشغيلي</h2>
+                </div>
+                <a href={routes.accounting}><Button variant="secondary">فتح النظام المالي</Button></a>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+                {cards.map(([label, value, desc, href, Icon]) => (
+                    <a key={label} href={href} className="rounded-[1.4rem] border border-slate-100 bg-gradient-to-br from-white to-emerald-50/50 p-4 transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:from-slate-950 dark:to-slate-900">
+                        <div className="mb-5 flex items-center justify-between">
+                            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-medical-50 text-medical-700"><Icon size={19} /></span>
+                            <Sparkles size={17} className="text-medical-500" />
+                        </div>
+                        <div className="text-xs font-black text-slate-500">{label}</div>
+                        <div className="mt-1 text-2xl font-black dark:text-white">{value}</div>
+                        <div className="mt-2 text-xs font-bold text-slate-500">{desc}</div>
+                    </a>
+                ))}
+            </div>
+        </Card>
+    );
+}
+
 function PulseRow({ icon: Icon, label, value, tone }) {
     const toneClass = {
         emerald: 'bg-emerald-50 text-emerald-700',
@@ -479,7 +620,10 @@ function AdminDashboard({ initialPayload }) {
                         </div>
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{data.kpis.map((item, index) => <KpiCard key={item.key} item={item} index={index} />)}</div>
                         <SmartOpsPanel routes={data.routes} lowStock={data.lowStock} orders={data.orders} />
+                        <ExecutiveCommandCenter routes={data.routes} orders={data.orders} lowStock={data.lowStock} products={data.products} />
+                        <PharmacyWorkflowBoard routes={data.routes} orders={data.orders} lowStock={data.lowStock} />
                         <Analytics charts={data.charts} />
+                        <FinanceInventorySnapshot routes={data.routes} kpis={data.kpis} />
                         <div className="grid gap-4 xl:grid-cols-[1fr_360px]"><div className="space-y-4"><OrdersTable orders={data.orders} /><ProductGrid products={data.products} /></div><SideWidgets lowStock={data.lowStock} /></div>
                     </div>
                 </main>
