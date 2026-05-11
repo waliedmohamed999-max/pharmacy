@@ -17,6 +17,45 @@ String get apiBaseUrl {
   return kIsWeb ? 'http://127.0.0.1:8000/api/mobile' : 'http://10.0.2.2:8000/api/mobile';
 }
 
+class PharmacyDesign {
+  static const primary = Color(0xff059669);
+  static const primaryDark = Color(0xff064e3b);
+  static const teal = Color(0xff0f766e);
+  static const mint = Color(0xffd9fbe8);
+  static const cyan = Color(0xff0891b2);
+  static const blue = Color(0xff2563eb);
+  static const danger = Color(0xffe11d48);
+  static const warning = Color(0xfff59e0b);
+  static const ink = Color(0xff0f172a);
+  static const softBg = Color(0xfff4f8f7);
+  static const darkBg = Color(0xff07111f);
+
+  static const radiusSm = 14.0;
+  static const radiusMd = 20.0;
+  static const radiusLg = 28.0;
+  static const radiusXl = 34.0;
+
+  static const pagePadding = 16.0;
+  static const sectionGap = 18.0;
+
+  static const medicalGradient = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [Color(0xff064e3b), Color(0xff059669), Color(0xff34d399)],
+  );
+
+  static List<BoxShadow> premiumShadow(BuildContext context, {double alpha = .08}) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: dark ? .18 : alpha),
+        blurRadius: 28,
+        offset: const Offset(0, 14),
+      ),
+    ];
+  }
+}
+
 void main() => runApp(const PharmacyClientApp());
 
 class PharmacyClientApp extends StatefulWidget {
@@ -59,9 +98,9 @@ class _PharmacyClientAppState extends State<PharmacyClientApp> {
 ThemeData appTheme(Brightness brightness) {
   final dark = brightness == Brightness.dark;
   final scheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xff059669),
+    seedColor: PharmacyDesign.primary,
     brightness: brightness,
-    primary: const Color(0xff059669),
+    primary: PharmacyDesign.primary,
     secondary: const Color(0xff14b8a6),
     surface: dark ? const Color(0xff111827) : Colors.white,
   );
@@ -70,18 +109,38 @@ ThemeData appTheme(Brightness brightness) {
     useMaterial3: true,
     brightness: brightness,
     colorScheme: scheme,
-    scaffoldBackgroundColor: dark ? const Color(0xff07111f) : const Color(0xfff1f7fa),
+    scaffoldBackgroundColor: dark ? PharmacyDesign.darkBg : PharmacyDesign.softBg,
     fontFamily: 'Cairo',
+    visualDensity: VisualDensity.adaptivePlatformDensity,
     textTheme: ThemeData(brightness: brightness).textTheme.apply(
           fontFamily: 'Cairo',
-          bodyColor: dark ? Colors.white : const Color(0xff0f172a),
-          displayColor: dark ? Colors.white : const Color(0xff0f172a),
+          bodyColor: dark ? Colors.white : PharmacyDesign.ink,
+          displayColor: dark ? Colors.white : PharmacyDesign.ink,
         ),
     appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
     cardTheme: CardThemeData(
       elevation: 0,
       color: dark ? const Color(0xff111827) : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmacyDesign.radiusLg)),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: PharmacyDesign.primary,
+        foregroundColor: Colors.white,
+        textStyle: const TextStyle(fontWeight: FontWeight.w900),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmacyDesign.radiusMd)),
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+      side: BorderSide(color: dark ? const Color(0xff1f2937) : const Color(0xffdbe7ef)),
+      labelStyle: TextStyle(color: dark ? Colors.white : PharmacyDesign.ink, fontWeight: FontWeight.w800),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -459,7 +518,7 @@ class _ClientShellState extends State<ClientShell> {
       animation: CartScope.of(context),
       builder: (context, _) => Scaffold(
         body: IndexedStack(index: index, children: pages),
-        bottomNavigationBar: NavigationBar(
+        bottomNavigationBar: PremiumNavigationBar(
           height: 72,
           selectedIndex: index,
           onDestinationSelected: (value) => setState(() => index = value),
@@ -474,6 +533,115 @@ class _ClientShellState extends State<ClientShell> {
             const NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'طلباتي'),
             const NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'الإعدادات'),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class PremiumNavigationBar extends StatelessWidget {
+  const PremiumNavigationBar({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.destinations,
+    this.height = 74,
+    super.key,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final List<NavigationDestination> destinations;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: dark ? const Color(0xff0f172a).withValues(alpha: .96) : Colors.white.withValues(alpha: .96),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: dark ? const Color(0xff1f2937) : const Color(0xffdce9e5)),
+          boxShadow: PharmacyDesign.premiumShadow(context, alpha: .10),
+        ),
+        child: Row(
+          children: [
+            for (var i = 0; i < destinations.length; i++)
+              Expanded(
+                child: _PremiumNavigationItem(
+                  destination: destinations[i],
+                  selected: selectedIndex == i,
+                  onTap: () => onDestinationSelected(i),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumNavigationItem extends StatelessWidget {
+  const _PremiumNavigationItem({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final NavigationDestination destination;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: destination.label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          height: 58,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: selected ? color.withValues(alpha: .13) : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
+            border: selected ? Border.all(color: color.withValues(alpha: .18)) : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: selected ? 38 : 30,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: selected ? color.withValues(alpha: .16) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                alignment: Alignment.center,
+                child: IconTheme(
+                  data: IconThemeData(color: selected ? color : Theme.of(context).colorScheme.onSurface.withValues(alpha: .72), size: selected ? 21 : 20),
+                  child: selected ? (destination.selectedIcon ?? destination.icon) : destination.icon,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                destination.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 10.5, fontWeight: selected ? FontWeight.w900 : FontWeight.w700, color: selected ? color : Theme.of(context).colorScheme.onSurface.withValues(alpha: .70)),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1256,6 +1424,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(child: HomeQuickActions(api: widget.api, cart: cart)),
               SliverToBoxAdapter(child: HeroCarousel(banners: banners)),
               const SliverToBoxAdapter(child: TrustBadges()),
+              SliverToBoxAdapter(child: HomeIntelligencePanel(api: widget.api, cart: cart)),
               SliverToBoxAdapter(child: CategoryStrip(categories: categories, onTap: (category) => openProducts(context, widget.api, category: category))),
               SliverToBoxAdapter(child: ProductRail(title: 'عروض اليوم', products: deals, urgent: true)),
               SliverToBoxAdapter(child: ProductRail(title: 'منتجات مميزة', products: featured)),
@@ -1593,6 +1762,146 @@ class InfoTile extends StatelessWidget {
   }
 }
 
+class HomeIntelligencePanel extends StatelessWidget {
+  const HomeIntelligencePanel({required this.api, required this.cart, super.key});
+  final ApiClient api;
+  final CartStore cart;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = CustomerSessionScope.of(context);
+    final customerName = session.isLoggedIn ? session.name : 'ضيف الصيدلية';
+    final cards = [
+      _SmartHomeCard(
+        title: 'إعادة طلب ذكية',
+        subtitle: cart.count > 0 ? 'لديك ${cart.count} منتج جاهز للمراجعة' : 'ابدأ من المنتجات الأكثر طلبا',
+        icon: Icons.autorenew_rounded,
+        color: PharmacyDesign.primary,
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CartScreen(api: api))),
+      ),
+      _SmartHomeCard(
+        title: 'رفع روشتة',
+        subtitle: 'ارسل صورة الوصفة لمراجعة الصيدلي',
+        icon: Icons.document_scanner_rounded,
+        color: PharmacyDesign.blue,
+        onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('رفع الروشتة قيد التجهيز'))),
+      ),
+      _SmartHomeCard(
+        title: 'طلب عاجل',
+        subtitle: 'وصول سريع للأدوية الضرورية',
+        icon: Icons.emergency_share_rounded,
+        color: PharmacyDesign.danger,
+        onTap: () => openProducts(context, api),
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [
+                  Theme.of(context).colorScheme.primary.withValues(alpha: .12),
+                  PharmacyDesign.cyan.withValues(alpha: .08),
+                  Colors.white.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? .03 : .82),
+                ],
+              ),
+              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: .12)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .14), borderRadius: BorderRadius.circular(18)),
+                  child: Icon(Icons.health_and_safety_rounded, color: Theme.of(context).colorScheme.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('مرحبا، $customerName', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                      const SizedBox(height: 4),
+                      Text('اقتراحات صحية، تتبع سريع، وتجربة شراء مخصصة داخل تطبيق الصيدلية.', maxLines: 2, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 12)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(color: PharmacyDesign.warning.withValues(alpha: .13), borderRadius: BorderRadius.circular(999)),
+                  child: const Text('120 نقطة', style: TextStyle(color: Color(0xffb45309), fontWeight: FontWeight.w900, fontSize: 11)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 118,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: cards.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, index) => SizedBox(width: 188, child: cards[index]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SmartHomeCard extends StatelessWidget {
+  const _SmartHomeCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: softCard(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(width: 42, height: 42, decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(15)), child: Icon(icon, color: color)),
+                const Spacer(),
+                Icon(Icons.arrow_back_rounded, color: color, size: 18),
+              ],
+            ),
+            const Spacer(),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+            const SizedBox(height: 4),
+            Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 11.5)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class CategoryStrip extends StatelessWidget {
   const CategoryStrip({required this.categories, required this.onTap, super.key});
   final List<CategoryItem> categories;
@@ -1651,7 +1960,7 @@ class ProductRail extends StatelessWidget {
       title: title,
       urgent: urgent,
       child: SizedBox(
-        height: 318,
+        height: 350,
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           scrollDirection: Axis.horizontal,
@@ -1685,7 +1994,17 @@ class ProductCard extends StatelessWidget {
                 Container(
                   height: 126,
                   width: double.infinity,
-                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .07), borderRadius: BorderRadius.circular(22)),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    gradient: LinearGradient(
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
+                      colors: [
+                        Theme.of(context).colorScheme.primary.withValues(alpha: .10),
+                        PharmacyDesign.cyan.withValues(alpha: .06),
+                      ],
+                    ),
+                  ),
                   child: Padding(padding: const EdgeInsets.all(10), child: AppImage(url: product.image, fit: BoxFit.contain)),
                 ),
                 if (product.discountPercent > 0)
@@ -1705,6 +2024,22 @@ class ProductCard extends StatelessWidget {
             Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, height: 1.3)),
             const SizedBox(height: 6),
             Text(product.categoryName.isEmpty ? 'منتج صيدلي' : product.categoryName, maxLines: 1, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 12)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.star_rounded, size: 15, color: PharmacyDesign.warning),
+                const SizedBox(width: 3),
+                const Text('4.8', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(99)),
+                    child: Text(product.sku.isEmpty ? 'صيدلية' : 'SKU ${product.sku}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 10)),
+                  ),
+                ),
+              ],
+            ),
             const Spacer(),
             if (product.comparePrice != null && product.comparePrice! > product.price)
               Text(money(product.comparePrice!), style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontWeight: FontWeight.w800, fontSize: 11)),
