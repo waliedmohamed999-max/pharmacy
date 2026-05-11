@@ -82,4 +82,68 @@ onReady(() => {
     modal?.querySelectorAll('[data-confirm-cancel]').forEach((el) => {
         el.addEventListener('click', closeModal);
     });
+
+    const html = document.documentElement;
+    const savedTheme = window.localStorage.getItem('admin-theme');
+    if (savedTheme === 'dark') {
+        html.classList.add('dark');
+    }
+
+    const themeToggle = document.getElementById('adminThemeToggle');
+    themeToggle?.addEventListener('click', () => {
+        const isDark = html.classList.toggle('dark');
+        window.localStorage.setItem('admin-theme', isDark ? 'dark' : 'light');
+    });
+
+    const commandOverlay = document.getElementById('adminCommandOverlay');
+    const commandTrigger = document.getElementById('adminCommandTrigger');
+    const commandClose = document.getElementById('adminCommandClose');
+    const commandInput = document.getElementById('adminCommandInput');
+
+    const openCommand = () => {
+        commandOverlay?.classList.add('is-open');
+        window.setTimeout(() => commandInput?.focus(), 30);
+    };
+
+    const closeCommand = () => {
+        commandOverlay?.classList.remove('is-open');
+        commandInput && (commandInput.value = '');
+    };
+
+    commandTrigger?.addEventListener('click', openCommand);
+    commandClose?.addEventListener('click', closeCommand);
+    commandOverlay?.addEventListener('click', (event) => {
+        if (event.target === commandOverlay) closeCommand();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            openCommand();
+        }
+        if (event.key === 'Escape') {
+            closeCommand();
+            notificationsPanel?.classList.remove('is-open');
+        }
+    });
+
+    commandInput?.addEventListener('input', () => {
+        const term = commandInput.value.trim().toLowerCase();
+        commandOverlay?.querySelectorAll('.admin-command-item').forEach((item) => {
+            item.classList.toggle('hidden', term.length > 0 && !item.textContent.toLowerCase().includes(term));
+        });
+    });
+
+    const notificationsTrigger = document.getElementById('adminNotifyTrigger');
+    const notificationsPanel = document.getElementById('adminNotificationsPanel');
+    notificationsTrigger?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        notificationsPanel?.classList.toggle('is-open');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!notificationsPanel?.contains(event.target) && !notificationsTrigger?.contains(event.target)) {
+            notificationsPanel?.classList.remove('is-open');
+        }
+    });
 });

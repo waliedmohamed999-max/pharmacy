@@ -342,6 +342,28 @@ label {
     @apply mr-auto flex items-center gap-2;
 }
 
+.admin-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(5, 150, 105, .45) transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar {
+    width: 7px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(5, 150, 105, .35);
+    border-radius: 999px;
+}
+
+.admin-sidebar nav > div {
+    @apply rounded-[1.35rem] border border-transparent p-1.5 transition;
+}
+
+.admin-sidebar nav > div:hover {
+    @apply border-emerald-100 bg-emerald-50/35;
+}
+
 .admin-global-search {
     @apply order-3 flex-1 basis-full md:order-none md:basis-auto;
 }
@@ -369,6 +391,57 @@ label {
 
 .admin-icon-button {
     @apply grid h-12 w-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700;
+}
+
+.admin-floating-panel {
+    @apply absolute left-0 top-[calc(100%+10px)] z-[70] hidden overflow-hidden rounded-[1.6rem] border border-slate-200 bg-white shadow-2xl shadow-slate-900/10;
+}
+
+.admin-floating-panel.is-open {
+    @apply block;
+    animation: admin-panel-in .18s var(--ease-premium) both;
+}
+
+@keyframes admin-panel-in {
+    from { opacity: 0; transform: translateY(6px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.admin-command-overlay {
+    @apply fixed inset-0 z-[90] hidden bg-slate-950/50 p-4 backdrop-blur-sm;
+}
+
+.admin-command-overlay.is-open {
+    @apply block;
+}
+
+.admin-command-dialog {
+    @apply mx-auto mt-14 max-w-2xl overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-2xl;
+    animation: admin-fade-up .22s var(--ease-premium) both;
+}
+
+.admin-command-input {
+    @apply h-14 w-full bg-transparent px-4 text-sm font-bold outline-none placeholder:text-slate-400;
+}
+
+.admin-command-item {
+    @apply flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700;
+}
+
+.admin-command-icon {
+    @apply grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 text-slate-600;
+}
+
+.admin-notification-item {
+    @apply flex items-start gap-3 rounded-2xl p-3 transition hover:bg-slate-50;
+}
+
+.admin-notification-dot {
+    @apply mt-2 h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,.14)];
+}
+
+.admin-topbar-stat {
+    @apply hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 shadow-sm xl:flex;
 }
 
 .admin-sync-pill {
@@ -414,6 +487,65 @@ label {
     .admin-topbar {
         right: 310px;
     }
+}
+
+.dark body,
+html.dark body {
+    background: #07111f;
+    color: #e5e7eb;
+}
+
+html.dark .admin-shell {
+    background:
+        radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.13), transparent 34%),
+        radial-gradient(circle at 8% 12%, rgba(8, 145, 178, 0.12), transparent 32%),
+        linear-gradient(180deg, #07111f 0%, #0f172a 100%);
+}
+
+html.dark .card-premium,
+html.dark .table-wrap,
+html.dark .admin-floating-panel,
+html.dark .admin-command-dialog,
+html.dark .admin-sidebar,
+html.dark .admin-topbar,
+html.dark .admin-page-heading {
+    background-color: rgba(15, 23, 42, .88);
+    border-color: rgba(51, 65, 85, .9);
+    color: #e5e7eb;
+}
+
+html.dark .sidebar-link {
+    color: #cbd5e1;
+}
+
+html.dark .sidebar-link:hover {
+    background: rgba(16, 185, 129, .12);
+}
+
+html.dark .table-premium thead th {
+    background: #111827;
+    color: #cbd5e1;
+}
+
+html.dark .table-premium tbody td {
+    color: #e2e8f0;
+    border-color: #1f2937;
+}
+
+html.dark .table-premium tbody tr:nth-child(even) {
+    background: rgba(15, 23, 42, .62);
+}
+
+html.dark .btn-secondary,
+html.dark .admin-icon-button,
+html.dark .admin-user-card,
+html.dark .admin-global-search .admin-global-search-input,
+html.dark .input-premium,
+html.dark .select-premium,
+html.dark .textarea-premium {
+    background: rgba(15, 23, 42, .92);
+    border-color: #334155;
+    color: #e2e8f0;
 }
 
 .admin-toast.success { border-color: #a7f3d0; }
