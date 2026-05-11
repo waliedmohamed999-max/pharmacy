@@ -28,22 +28,28 @@ class PharmacyClientApp extends StatefulWidget {
 
 class _PharmacyClientAppState extends State<PharmacyClientApp> {
   final cart = CartStore();
+  final session = CustomerSession();
   ThemeMode themeMode = ThemeMode.light;
 
   @override
   Widget build(BuildContext context) {
     return CartScope(
       cart: cart,
-      child: MaterialApp(
-        title: 'صيدلية د. محمد رمضان',
-        debugShowCheckedModeBanner: false,
-        locale: const Locale('ar'),
-        themeMode: themeMode,
-        theme: appTheme(Brightness.light),
-        darkTheme: appTheme(Brightness.dark),
-        builder: (context, child) => Directionality(textDirection: ui.TextDirection.rtl, child: child!),
-        home: ClientShell(
-          onToggleTheme: () => setState(() => themeMode = themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark),
+      child: CustomerSessionScope(
+        session: session,
+        child: MaterialApp(
+          title: 'صيدلية د. محمد رمضان',
+          debugShowCheckedModeBanner: false,
+          locale: const Locale('ar'),
+          themeMode: themeMode,
+          theme: appTheme(Brightness.light),
+          darkTheme: appTheme(Brightness.dark),
+          builder: (context, child) => Directionality(textDirection: ui.TextDirection.rtl, child: child!),
+          home: SplashGate(
+            child: ClientShell(
+              onToggleTheme: () => setState(() => themeMode = themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark),
+            ),
+          ),
         ),
       ),
     );
@@ -310,6 +316,115 @@ class CartStore extends ChangeNotifier {
 class CartScope extends InheritedNotifier<CartStore> {
   const CartScope({required CartStore cart, required super.child, super.key}) : super(notifier: cart);
   static CartStore of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<CartScope>()!.notifier!;
+}
+
+class CustomerSession extends ChangeNotifier {
+  String name = '';
+  String phone = '';
+  String email = '';
+  String city = '';
+  String address = '';
+
+  bool get isLoggedIn => name.trim().isNotEmpty && phone.trim().isNotEmpty;
+
+  void login({required String nextName, required String nextPhone, String nextEmail = '', String nextCity = '', String nextAddress = ''}) {
+    name = nextName.trim();
+    phone = nextPhone.trim();
+    email = nextEmail.trim();
+    city = nextCity.trim();
+    address = nextAddress.trim();
+    notifyListeners();
+  }
+
+  void logout() {
+    name = '';
+    phone = '';
+    email = '';
+    city = '';
+    address = '';
+    notifyListeners();
+  }
+}
+
+class CustomerSessionScope extends InheritedNotifier<CustomerSession> {
+  const CustomerSessionScope({required CustomerSession session, required super.child, super.key}) : super(notifier: session);
+  static CustomerSession of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<CustomerSessionScope>()!.notifier!;
+}
+
+class SplashGate extends StatefulWidget {
+  const SplashGate({required this.child, super.key});
+  final Widget child;
+
+  @override
+  State<SplashGate> createState() => _SplashGateState();
+}
+
+class _SplashGateState extends State<SplashGate> {
+  bool ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 1700), () {
+      if (mounted) setState(() => ready = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 420),
+        child: ready ? widget.child : const AppSplashScreen(),
+      );
+}
+
+class AppSplashScreen extends StatelessWidget {
+  const AppSplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          padding: const EdgeInsets.all(28),
+          decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [Color(0xff064e3b), Color(0xff059669), Color(0xff14b8a6)])),
+          child: Column(
+            children: [
+              const Spacer(),
+              Container(
+                width: 116,
+                height: 116,
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(36), border: Border.all(color: Colors.white.withValues(alpha: .22))),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Icon(Icons.local_pharmacy_rounded, color: Colors.white, size: 62),
+                    Positioned(top: 22, right: 24, child: Container(width: 12, height: 12, decoration: const BoxDecoration(color: Color(0xffff3b5c), shape: BoxShape.circle))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text('صيدلية د. محمد رمضان', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 30)),
+              const SizedBox(height: 8),
+              Text('رعاية موثوقة وتسوق أسرع', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withValues(alpha: .86), fontWeight: FontWeight.w800, fontSize: 16)),
+              const SizedBox(height: 28),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: .13), borderRadius: BorderRadius.circular(999)),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white)),
+                    SizedBox(width: 10),
+                    Text('تجهيز تجربة العميل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Text('Pharmacy Customer App', style: TextStyle(color: Colors.white.withValues(alpha: .70), fontWeight: FontWeight.w800)),
+            ],
+          ),
+        ),
+      );
 }
 
 class ClientShell extends StatefulWidget {
@@ -854,6 +969,194 @@ class SettingsToolCard extends StatelessWidget {
               Text(tool.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: mutedStyle(context, 11)),
             ],
           ),
+        ),
+      );
+}
+
+class CustomerLoginScreen extends StatefulWidget {
+  const CustomerLoginScreen({this.reason = 'سجل دخولك للمتابعة', super.key});
+  final String reason;
+
+  @override
+  State<CustomerLoginScreen> createState() => _CustomerLoginScreenState();
+}
+
+class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
+  final formKey = GlobalKey<FormState>();
+  late final TextEditingController name;
+  late final TextEditingController phone;
+  late final TextEditingController email;
+  late final TextEditingController city;
+  late final TextEditingController address;
+
+  @override
+  void initState() {
+    super.initState();
+    final session = CustomerSessionScope.of(context);
+    name = TextEditingController(text: session.name);
+    phone = TextEditingController(text: session.phone);
+    email = TextEditingController(text: session.email);
+    city = TextEditingController(text: session.city);
+    address = TextEditingController(text: session.address);
+  }
+
+  @override
+  void dispose() {
+    name.dispose();
+    phone.dispose();
+    email.dispose();
+    city.dispose();
+    address.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: Form(
+          key: formKey,
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: LoginHero(reason: widget.reason, onBack: () => Navigator.of(context).pop(false))),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: softCard(context),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('بيانات العميل', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+                        const SizedBox(height: 6),
+                        Text('هذه البيانات مطلوبة قبل إرسال الطلب للصيدلية.', style: mutedStyle(context, 13)),
+                        const SizedBox(height: 14),
+                        LoginField(controller: name, label: 'الاسم الكامل', icon: Icons.person_outline_rounded, required: true),
+                        LoginField(controller: phone, label: 'رقم الجوال', icon: Icons.phone_iphone_rounded, keyboard: TextInputType.phone, required: true),
+                        LoginField(controller: email, label: 'البريد الإلكتروني', icon: Icons.alternate_email_rounded, keyboard: TextInputType.emailAddress),
+                        LoginField(controller: city, label: 'المدينة', icon: Icons.location_city_outlined),
+                        LoginField(controller: address, label: 'العنوان المختصر', icon: Icons.location_on_outlined, maxLines: 2),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: LoginBenefits()),
+              const SliverToBoxAdapter(child: SizedBox(height: 110)),
+            ],
+          ),
+        ),
+        bottomNavigationBar: SafeArea(
+          minimum: const EdgeInsets.all(16),
+          child: FilledButton.icon(
+            onPressed: save,
+            icon: const Icon(Icons.login_rounded),
+            label: const Text('دخول ومتابعة الطلب'),
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+          ),
+        ),
+      );
+
+  void save() {
+    if (!formKey.currentState!.validate()) return;
+    CustomerSessionScope.of(context).login(
+      nextName: name.text,
+      nextPhone: phone.text,
+      nextEmail: email.text,
+      nextCity: city.text,
+      nextAddress: address.text,
+    );
+    Navigator.of(context).pop(true);
+  }
+}
+
+class LoginHero extends StatelessWidget {
+  const LoginHero({required this.reason, required this.onBack, super.key});
+  final String reason;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 12, 16, 22),
+        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xff052e2b), Color(0xff059669)])),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                IconButton.filledTonal(onPressed: onBack, icon: const Icon(Icons.arrow_forward_rounded), style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: .16), foregroundColor: Colors.white)),
+                const Spacer(),
+                Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)), child: const Text('عميل الصيدلية', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
+              ],
+            ),
+            const SizedBox(height: 18),
+            const Text('تسجيل دخول العميل', style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Text(reason, style: TextStyle(color: Colors.white.withValues(alpha: .84), fontWeight: FontWeight.w800)),
+          ],
+        ),
+      );
+}
+
+class LoginField extends StatelessWidget {
+  const LoginField({required this.controller, required this.label, required this.icon, this.keyboard, this.maxLines = 1, this.required = false, super.key});
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final TextInputType? keyboard;
+  final int maxLines;
+  final bool required;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: TextFormField(
+          controller: controller,
+          keyboardType: keyboard,
+          maxLines: maxLines,
+          validator: (value) => required && (value == null || value.trim().isEmpty) ? 'مطلوب' : null,
+          decoration: InputDecoration(prefixIcon: Icon(icon), labelText: label),
+        ),
+      );
+}
+
+class LoginBenefits extends StatelessWidget {
+  const LoginBenefits({super.key});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: softCard(context),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('لماذا التسجيل مطلوب؟', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 19)),
+              SizedBox(height: 12),
+              LoginBenefitRow(icon: Icons.local_shipping_outlined, title: 'توصيل أسرع', subtitle: 'الصيدلية تحتاج رقم الجوال والعنوان لتأكيد الطلب.'),
+              LoginBenefitRow(icon: Icons.receipt_long_outlined, title: 'تتبع الطلبات', subtitle: 'رقم الجوال يستخدم لعرض طلباتك السابقة والحالية.'),
+              LoginBenefitRow(icon: Icons.health_and_safety_outlined, title: 'مراجعة صيدلية', subtitle: 'تساعد البيانات الصيدلي في تحضير الطلب بشكل صحيح.'),
+            ],
+          ),
+        ),
+      );
+}
+
+class LoginBenefitRow extends StatelessWidget {
+  const LoginBenefitRow({required this.icon, required this.title, required this.subtitle, super.key});
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          children: [
+            CircleIcon(icon: icon),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), Text(subtitle, style: mutedStyle(context, 12))])),
+          ],
         ),
       );
 }
@@ -2240,6 +2543,7 @@ class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = CartScope.of(context);
+    final session = CustomerSessionScope.of(context);
     return AnimatedBuilder(
       animation: cart,
       builder: (context, _) => Scaffold(
@@ -2271,9 +2575,16 @@ class CartScreen extends StatelessWidget {
             : SafeArea(
                 minimum: const EdgeInsets.all(16),
                 child: FilledButton.icon(
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CheckoutScreen(api: api))),
+                  onPressed: () async {
+                    if (!session.isLoggedIn) {
+                      final ok = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => const CustomerLoginScreen(reason: 'سجل بياناتك لإتمام الطلب')));
+                      if (ok != true || !context.mounted) return;
+                    }
+                    if (!context.mounted) return;
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => CheckoutScreen(api: api)));
+                  },
                   icon: const Icon(Icons.lock_outline),
-                  label: Text('إتمام الطلب - ${money(cart.total)}'),
+                  label: Text(session.isLoggedIn ? 'إتمام الطلب - ${money(cart.total)}' : 'تسجيل الدخول لإتمام الطلب'),
                 ),
               ),
       ),
@@ -2470,6 +2781,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final address = TextEditingController();
   final notes = TextEditingController();
   bool loading = false;
+  bool seeded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (seeded) return;
+    final session = CustomerSessionScope.of(context);
+    name.text = session.name;
+    phone.text = session.phone;
+    city.text = session.city;
+    address.text = session.address;
+    seeded = true;
+  }
 
   @override
   void dispose() {
@@ -2542,7 +2866,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> submit(CartStore cart) async {
+    final session = CustomerSessionScope.of(context);
+    if (!session.isLoggedIn) {
+      final ok = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => const CustomerLoginScreen(reason: 'تسجيل العميل إجباري قبل إرسال الطلب')));
+      if (ok != true || !mounted) return;
+      final updated = CustomerSessionScope.of(context);
+      name.text = updated.name;
+      phone.text = updated.phone;
+      city.text = updated.city;
+      address.text = updated.address;
+    }
     if (!formKey.currentState!.validate()) return;
+    CustomerSessionScope.of(context).login(nextName: name.text, nextPhone: phone.text, nextCity: city.text, nextAddress: address.text);
     setState(() => loading = true);
     try {
       final response = await widget.api.postJson('/orders', {
