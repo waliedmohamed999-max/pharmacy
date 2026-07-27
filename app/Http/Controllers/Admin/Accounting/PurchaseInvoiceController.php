@@ -10,6 +10,7 @@ use App\Models\Warehouse;
 use App\Services\AccountingService;
 use App\Services\InventoryService;
 use App\Services\ProductBarcodeService;
+use App\Services\ZatcaQrService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -42,15 +43,27 @@ class PurchaseInvoiceController extends Controller
         ]);
     }
 
-    public function store(Request $request, AccountingService $accounting, InventoryService $inventory, ProductBarcodeService $barcodeService)
+    public function show(PurchaseInvoice $purchase, ProductBarcodeService $barcodeService, ZatcaQrService $zatcaQr)
+    {
+        return $this->invoiceView($purchase, $barcodeService, $zatcaQr, false);
+    }
+
+    public function print(PurchaseInvoice $purchase, ProductBarcodeService $barcodeService, ZatcaQrService $zatcaQr)
+    {
+        return $this->invoiceView($purchase, $barcodeService, $zatcaQr, true);
+    }
+
+    public function store(Request $request, AccountingService $accounting, InventoryService $inventory, ProductBarcodeService $barcodeService, ZatcaQrService $zatcaQr)
     {
         $data = $request->validate([
             'contact_id' => ['required', 'exists:finance_contacts,id'],
             'warehouse_id' => ['required', 'exists:warehouses,id'],
+            'supplier_invoice_number' => ['nullable', 'string', 'max:255'],
+            'supplier_tax_number' => ['nullable', 'string', 'max:32'],
             'invoice_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
             'discount' => ['nullable', 'numeric', 'min:0'],
-            'tax' => ['nullable', 'numeric', 'min:0'],
+            'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'notes' => ['nullable', 'max:2000'],
             'description' => ['required', 'array', 'min:1'],
             'description.*' => ['required', 'max:255'],
@@ -65,15 +78,16 @@ class PurchaseInvoiceController extends Controller
         ]);
 
         $discount = (float) ($data['discount'] ?? 0);
-        $tax = (float) ($data['tax'] ?? 0);
+        $taxRate = (float) ($data['tax_rate'] ?? 15);
         $rows = [];
         $subtotal = 0.0;
 
         foreach ($data['description'] as $i => $description) {
             $qty = (float) ($data['qty'][$i] ?? 0);
             $unitCost = (float) ($data['unit_cost'][$i] ?? 0);
-            $lineTotal = $qty * $unitCost;
+            $lineTotal = round($qty * $unitCost, 2);
             $subtotal += $lineTotal;
+
             $rows[] = [
                 'product_id' => !empty($data['product_id'][$i]) ? (int) $data['product_id'][$i] : null,
                 'barcode' => $barcodeService->normalize((string) ($data['barcode'][$i] ?? '')),
@@ -84,23 +98,37 @@ class PurchaseInvoiceController extends Controller
             ];
         }
 
-        $total = max(0, $subtotal - $discount + $tax);
+        $taxableAmount = max(0, round($subtotal - $discount, 2));
+        $tax = round($taxableAmount * ($taxRate / 100), 2);
+        $total = max(0, round($taxableAmount + $tax, 2));
 
-        DB::transaction(function () use ($data, $accounting, $subtotal, $discount, $tax, $total, $rows, $request) {
+        $invoice = DB::transaction(function () use ($data, $accounting, $subtotal, $discount, $taxRate, $taxableAmount, $tax, $total, $rows, $request, $inventory, $barcodeService, $zatcaQr) {
+            $contact = FinanceContact::query()->findOrFail((int) $data['contact_id']);
+            $supplierTaxNumber = preg_replace('/\D+/', '', (string) ($data['supplier_tax_number'] ?: $contact->tax_number ?: '')) ?: null;
+
+            if ($supplierTaxNumber && $contact->tax_number !== $supplierTaxNumber) {
+                $contact->forceFill(['tax_number' => $supplierTaxNumber])->save();
+            }
+
             $invoice = PurchaseInvoice::create([
                 'number' => $accounting->nextNumber('purchase_invoices', 'number', 'PI-'),
+                'supplier_invoice_number' => $data['supplier_invoice_number'] ?? null,
                 'contact_id' => $data['contact_id'],
                 'warehouse_id' => $data['warehouse_id'],
+                'supplier_tax_number' => $supplierTaxNumber,
                 'invoice_date' => $data['invoice_date'],
                 'due_date' => $data['due_date'] ?? null,
                 'status' => 'posted',
                 'subtotal' => $subtotal,
                 'discount' => $discount,
+                'tax_rate' => $taxRate,
+                'taxable_amount' => $taxableAmount,
                 'tax' => $tax,
                 'total' => $total,
                 'paid_amount' => 0,
                 'balance' => $total,
                 'notes' => $data['notes'] ?? null,
+                'zatca_status' => 'ready',
             ]);
 
             foreach ($rows as $row) {
@@ -132,9 +160,30 @@ class PurchaseInvoiceController extends Controller
                 }
             }
 
+            $invoice->load('contact');
+            $invoice->forceFill([
+                'zatca_qr_payload' => $zatcaQr->purchaseInvoicePayload($invoice),
+            ])->save();
+
             $accounting->postPurchaseInvoice($invoice, optional($request->user())->id);
+
+            return $invoice;
         });
 
-        return redirect()->route('admin.accounting.purchases.index')->with('success', 'تم إنشاء فاتورة المشتريات وترحيل القيد.');
+        return redirect()
+            ->route('admin.accounting.purchases.show', $invoice)
+            ->with('success', 'تم إنشاء فاتورة المشتريات الضريبية وتجهيز QR زاتكا.');
+    }
+
+    private function invoiceView(PurchaseInvoice $invoice, ProductBarcodeService $barcodeService, ZatcaQrService $zatcaQr, bool $printMode)
+    {
+        $invoice->load(['contact', 'warehouse', 'items.product']);
+
+        return view('admin.accounting.purchases.show', [
+            'invoice' => $invoice,
+            'barcodeSvg' => $barcodeService->svg($invoice->number, 52),
+            'zatcaQrSvg' => $zatcaQr->svg((string) $invoice->zatca_qr_payload, 190),
+            'printMode' => $printMode,
+        ]);
     }
 }

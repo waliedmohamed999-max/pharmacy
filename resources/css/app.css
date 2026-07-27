@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -595,6 +597,78 @@ html.dark .textarea-premium {
 
 .store-footer-newsletter-btn {
     @apply inline-flex items-center justify-center rounded-xl bg-amber-400 text-slate-900 px-4 py-2 text-sm font-black hover:bg-amber-300 transition;
+}
+
+/* App download banner — motion identity */
+.app-banner-surface {
+    background-size: 160% 160%;
+    animation: app-banner-drift 14s ease-in-out infinite;
+}
+
+@keyframes app-banner-drift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.app-banner-logo {
+    animation: app-banner-pulse 5s ease-in-out infinite;
+}
+
+@keyframes app-banner-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.35); }
+    50% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
+}
+
+.app-banner-mockup {
+    animation: app-banner-float 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes app-banner-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-9px); }
+}
+
+.app-banner-qr {
+    animation: app-banner-ring 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes app-banner-ring {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45); }
+    50% { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+}
+
+.app-banner-icon {
+    animation: app-banner-icon-drift 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes app-banner-icon-drift {
+    0%, 100% { transform: translate(var(--drift-x, 0), 0); }
+    50% { transform: translate(calc(var(--drift-x, 0) * -1), -14px); }
+}
+
+.app-banner-ripple {
+    position: absolute;
+    border-radius: 9999px;
+    background: rgba(15, 23, 42, 0.18);
+    transform: scale(0);
+    animation: app-banner-ripple-out 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    pointer-events: none;
+}
+
+@keyframes app-banner-ripple-out {
+    to { transform: scale(3); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-banner-surface,
+    .app-banner-logo,
+    .app-banner-mockup,
+    .app-banner-qr,
+    .app-banner-icon,
+    .app-banner-ripple {
+        animation: none !important;
+        transform: none !important;
+    }
 }
 
 .store-footer-bottom {

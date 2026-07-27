@@ -82,7 +82,6 @@
             'customers' => route('admin.customers.index'),
             'pos' => route('admin.pos.index'),
             'finance' => route('admin.finance.index'),
-            'accounting' => route('admin.accounting.index'),
             'reports' => route('admin.reports.index'),
             'homeSections' => route('admin.home-sections.index'),
             'banners' => route('admin.banners.index'),

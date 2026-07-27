@@ -111,6 +111,8 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->name('admin.')->gr
         Route::get('purchases', [AdminPurchaseInvoiceController::class, 'index'])->name('purchases.index');
         Route::get('purchases/create', [AdminPurchaseInvoiceController::class, 'create'])->name('purchases.create');
         Route::post('purchases', [AdminPurchaseInvoiceController::class, 'store'])->name('purchases.store');
+        Route::get('purchases/{purchase}', [AdminPurchaseInvoiceController::class, 'show'])->name('purchases.show');
+        Route::get('purchases/{purchase}/print', [AdminPurchaseInvoiceController::class, 'print'])->name('purchases.print');
 
         Route::get('journal', [AdminJournalEntryController::class, 'index'])->name('journal.index');
         Route::get('journal/create', [AdminJournalEntryController::class, 'create'])->name('journal.create');

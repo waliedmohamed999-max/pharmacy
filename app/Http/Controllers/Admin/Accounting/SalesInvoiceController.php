@@ -32,7 +32,11 @@ class SalesInvoiceController extends Controller
             ->orderBy('name')
             ->get();
 
-        $products = Product::query()->orderBy('name')->limit(200)->get();
+        $products = Product::query()
+            ->orderBy('name')
+            ->limit(500)
+            ->get(['id', 'name', 'sku', 'barcode', 'price', 'quantity']);
+
         $warehouses = Warehouse::query()->where('is_active', true)->orderBy('name')->get();
 
         return view('admin.accounting.sales.create', [
@@ -53,13 +57,13 @@ class SalesInvoiceController extends Controller
             'tax' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'max:2000'],
             'description' => ['required', 'array', 'min:1'],
-            'description.*' => ['required', 'max:255'],
+            'description.*' => ['nullable', 'max:255'],
             'product_id' => ['nullable', 'array'],
             'product_id.*' => ['nullable', 'exists:products,id'],
             'qty' => ['required', 'array'],
-            'qty.*' => ['required', 'numeric', 'min:0.01'],
+            'qty.*' => ['nullable', 'numeric', 'min:0.01'],
             'unit_price' => ['required', 'array'],
-            'unit_price.*' => ['required', 'numeric', 'min:0'],
+            'unit_price.*' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $discount = (float) ($data['discount'] ?? 0);
@@ -70,20 +74,39 @@ class SalesInvoiceController extends Controller
         foreach ($data['description'] as $i => $description) {
             $qty = (float) ($data['qty'][$i] ?? 0);
             $unitPrice = (float) ($data['unit_price'][$i] ?? 0);
+            $hasProduct = !empty($data['product_id'][$i]);
+            $hasDescription = trim((string) $description) !== '';
+
+            if (!$hasProduct && !$hasDescription && $qty === 0.0 && $unitPrice === 0.0) {
+                continue;
+            }
+
+            if (!$hasDescription || $qty <= 0) {
+                throw ValidationException::withMessages([
+                    'description' => ['كل بند مستخدم يجب أن يحتوي على وصف وكمية صحيحة.'],
+                ]);
+            }
+
             $lineTotal = $qty * $unitPrice;
             $subtotal += $lineTotal;
             $rows[] = [
-                'product_id' => !empty($data['product_id'][$i]) ? (int) $data['product_id'][$i] : null,
-                'description' => $description,
+                'product_id' => $hasProduct ? (int) $data['product_id'][$i] : null,
+                'description' => (string) $description,
                 'qty' => $qty,
                 'unit_price' => $unitPrice,
                 'line_total' => $lineTotal,
             ];
         }
 
+        if (count($rows) === 0) {
+            throw ValidationException::withMessages([
+                'description' => ['يجب إدخال بند واحد على الأقل في الفاتورة.'],
+            ]);
+        }
+
         $total = max(0, $subtotal - $discount + $tax);
 
-        DB::transaction(function () use ($data, $accounting, $subtotal, $discount, $tax, $total, $rows, $request) {
+        DB::transaction(function () use ($data, $accounting, $subtotal, $discount, $tax, $total, $rows, $request, $inventory) {
             $invoice = SalesInvoice::create([
                 'number' => $accounting->nextNumber('sales_invoices', 'number', 'SI-'),
                 'contact_id' => $data['contact_id'],
@@ -107,6 +130,7 @@ class SalesInvoiceController extends Controller
                 if (!empty($row['product_id'])) {
                     $saleQty = (float) $row['qty'];
                     $product = Product::query()->find($row['product_id']);
+
                     try {
                         $unitCost = $inventory->issue(
                             (int) $invoice->warehouse_id,
@@ -123,6 +147,7 @@ class SalesInvoiceController extends Controller
                             'qty' => ['الكمية غير كافية للمنتج: ' . ($product?->name ?: $row['product_id'])],
                         ]);
                     }
+
                     $totalCost += ($saleQty * $unitCost);
                 }
             }

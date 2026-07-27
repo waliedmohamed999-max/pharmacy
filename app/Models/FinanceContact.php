@@ -14,6 +14,7 @@ class FinanceContact extends Model
         'name',
         'phone',
         'email',
+        'tax_number',
         'city',
         'address',
         'opening_balance',

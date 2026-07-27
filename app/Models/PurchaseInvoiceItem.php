@@ -23,4 +23,14 @@ class PurchaseInvoiceItem extends Model
         'unit_cost' => 'decimal:2',
         'line_total' => 'decimal:2',
     ];
+
+    public function purchaseInvoice()
+    {
+        return $this->belongsTo(PurchaseInvoice::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
 }

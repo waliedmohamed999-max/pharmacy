@@ -77,8 +77,6 @@ const navGroups = [
             ['Prescriptions', 'الروشتات', FileText, 'dashboard', 14],
             ['Branches', 'الفروع', Building2, 'dashboard', null],
             ['POS', 'نقطة البيع POS', CreditCard, 'pos', null],
-            ['Suppliers', 'الموردون', Truck, 'accounting', null],
-            ['Purchases', 'المشتريات', Receipt, 'accounting', null],
         ],
     },
     {
@@ -95,7 +93,6 @@ const navGroups = [
         label: 'المالية والإدارة',
         items: [
             ['Finance', 'المركز المالي', Wallet, 'finance', null],
-            ['Accounting', 'النظام المحاسبي', Receipt, 'accounting', null],
             ['Employees', 'الموظفون والصلاحيات', UserCog, 'users', null],
             ['Permissions', 'الأدوار والصلاحيات', ShieldCheck, 'users', null],
             ['Coupons', 'الكوبونات', Percent, 'banners', null],
@@ -438,10 +435,10 @@ function FinanceInventorySnapshot({ routes, kpis }) {
         <Card className="p-5">
             <div className="mb-5 flex items-center justify-between">
                 <div>
-                    <div className="text-sm font-black text-medical-600">Accounting + Inventory</div>
+                    <div className="text-sm font-black text-medical-600">Finance + Inventory</div>
                     <h2 className="text-xl font-black dark:text-white">ملخص المدير المالي والتشغيلي</h2>
                 </div>
-                <a href={routes.accounting}><Button variant="secondary">فتح النظام المالي</Button></a>
+                <a href={routes.finance}><Button variant="secondary">فتح المركز المالي</Button></a>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
                 {cards.map(([label, value, desc, href, Icon]) => (

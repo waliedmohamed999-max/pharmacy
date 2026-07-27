@@ -14,15 +14,46 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $payments = FinancePayment::query()
+        $filters = $request->validate([
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'direction' => ['nullable', 'in:in,out'],
+            'contact_id' => ['nullable', 'integer', 'exists:finance_contacts,id'],
+            'account_id' => ['nullable', 'integer', 'exists:finance_accounts,id'],
+        ]);
+
+        $query = FinancePayment::query()
             ->with(['contact', 'account'])
-            ->latest()
-            ->paginate(20);
+            ->when($filters['date_from'] ?? null, fn ($q, $date) => $q->whereDate('payment_date', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($q, $date) => $q->whereDate('payment_date', '<=', $date))
+            ->when($filters['direction'] ?? null, fn ($q, $direction) => $q->where('direction', $direction))
+            ->when($filters['contact_id'] ?? null, fn ($q, $contactId) => $q->where('contact_id', $contactId))
+            ->when($filters['account_id'] ?? null, fn ($q, $accountId) => $q->where('account_id', $accountId));
+
+        $summaryQuery = clone $query;
+        $payments = $query->latest('payment_date')->latest('id')->paginate(20)->withQueryString();
+
+        $summary = [
+            'cash_in' => (float) (clone $summaryQuery)->where('direction', 'in')->sum('amount'),
+            'cash_out' => (float) (clone $summaryQuery)->where('direction', 'out')->sum('amount'),
+            'count' => (clone $summaryQuery)->count(),
+        ];
+        $summary['net'] = $summary['cash_in'] - $summary['cash_out'];
+
+        $contacts = FinanceContact::query()->where('is_active', true)->orderBy('name')->get();
+        $cashAccounts = FinanceAccount::query()
+            ->whereIn('code', [AccountingService::ACCOUNT_CASH, AccountingService::ACCOUNT_BANK])
+            ->orderBy('code')
+            ->get();
 
         return view('admin.accounting.payments.index', [
             'payments' => $payments,
+            'summary' => $summary,
+            'filters' => $filters,
+            'contacts' => $contacts,
+            'cashAccounts' => $cashAccounts,
         ]);
     }
 
@@ -34,8 +65,19 @@ class PaymentController extends Controller
             ->orderBy('code')
             ->get();
 
-        $salesInvoices = SalesInvoice::query()->where('balance', '>', 0)->latest()->limit(100)->get();
-        $purchaseInvoices = PurchaseInvoice::query()->where('balance', '>', 0)->latest()->limit(100)->get();
+        $salesInvoices = SalesInvoice::query()
+            ->with('contact')
+            ->where('balance', '>', 0)
+            ->latest()
+            ->limit(100)
+            ->get();
+
+        $purchaseInvoices = PurchaseInvoice::query()
+            ->with('contact')
+            ->where('balance', '>', 0)
+            ->latest()
+            ->limit(100)
+            ->get();
 
         return view('admin.accounting.payments.create', [
             'contacts' => $contacts,
@@ -58,6 +100,30 @@ class PaymentController extends Controller
             'reference_id' => ['nullable', 'integer'],
             'notes' => ['nullable', 'max:2000'],
         ]);
+
+        if (!empty($data['reference_type']) && !empty($data['reference_id'])) {
+            if ($data['reference_type'] === 'sales_invoice' && $data['direction'] !== 'in') {
+                return back()->withInput()->with('error', 'فاتورة المبيعات يجب أن ترتبط بعملية تحصيل من عميل.');
+            }
+
+            if ($data['reference_type'] === 'purchase_invoice' && $data['direction'] !== 'out') {
+                return back()->withInput()->with('error', 'فاتورة المشتريات يجب أن ترتبط بعملية سداد لمورد.');
+            }
+
+            $invoice = $data['reference_type'] === 'sales_invoice'
+                ? SalesInvoice::query()->find($data['reference_id'])
+                : PurchaseInvoice::query()->find($data['reference_id']);
+
+            if (!$invoice) {
+                return back()->withInput()->with('error', 'الفاتورة المحددة غير موجودة.');
+            }
+
+            if ((float) $data['amount'] > (float) $invoice->balance) {
+                return back()->withInput()->with('error', 'المبلغ أكبر من الرصيد المتبقي على الفاتورة.');
+            }
+
+            $data['contact_id'] = $data['contact_id'] ?? $invoice->contact_id;
+        }
 
         DB::transaction(function () use ($data, $request, $accounting) {
             $payment = FinancePayment::create([

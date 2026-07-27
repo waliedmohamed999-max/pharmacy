@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,10 +6,12 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import {
     Bell,
+    BatteryFull,
     ChevronDown,
     Clock3,
     CreditCard,
     Heart,
+    HeartPulse,
     Home,
     Languages,
     Menu,
@@ -21,10 +23,12 @@ import {
     Search,
     ShieldCheck,
     ShoppingCart,
+    SignalHigh,
     Sparkles,
     Star,
     Truck,
     User,
+    Wifi,
     X,
     Zap,
 } from 'lucide-react';
@@ -486,54 +490,278 @@ function Testimonials() {
     );
 }
 
-function AppBanner() {
+const appBannerScreens = [
+    {
+        icon: Bell,
+        eyebrow: '100% إشعارات فورية',
+        title: 'تم تأكيد طلبك',
+        text: 'هيوصلك خلال 24-48 ساعة',
+    },
+    {
+        icon: Sparkles,
+        eyebrow: 'منتجات أصلية 100%',
+        title: 'عروض الصيدلية',
+        text: 'خصومات على منتجات العناية والصحة',
+    },
+    {
+        icon: Truck,
+        eyebrow: 'تتبع لحظي بالحظة',
+        title: 'طلبك في الطريق',
+        text: 'السائق هيوصلك خلال ساعة تقريبًا',
+    },
+];
+
+const appBannerFloatingIcons = [
+    { Icon: Pill, className: 'right-2 top-6', size: 26, depth: 0.5, drift: '8px' },
+    { Icon: HeartPulse, className: 'left-0 top-1/3', size: 22, depth: 0.8, drift: '-10px' },
+    { Icon: ShieldCheck, className: 'right-6 bottom-8', size: 20, depth: 0.35, drift: '6px' },
+];
+
+function useReducedMotion() {
+    return useMemo(() => {
+        if (typeof window === 'undefined' || !window.matchMedia) return false;
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }, []);
+}
+
+function RippleButton({ className, children, ...props }) {
+    const [ripples, setRipples] = useState([]);
+
+    function spawnRipple(event) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const id = Date.now();
+        const ripple = {
+            id,
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+            size: Math.max(rect.width, rect.height) * 1.2,
+        };
+        setRipples((current) => [...current, ripple]);
+        window.setTimeout(() => {
+            setRipples((current) => current.filter((r) => r.id !== id));
+        }, 650);
+    }
+
     return (
-        <section className="mx-auto max-w-7xl px-4 py-9 md:px-5">
-            <div className="grid overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-950 via-medical-900 to-teal-700 p-6 text-white md:grid-cols-2 md:p-10">
-                <div>
-                    <Badge className="mb-5 bg-white/15 text-white">تطبيق الصيدلية</Badge>
+        <Button
+            className={cn('relative overflow-hidden', className)}
+            onMouseDown={spawnRipple}
+            {...props}
+        >
+            {children}
+            {ripples.map((ripple) => (
+                <span
+                    key={ripple.id}
+                    className="app-banner-ripple"
+                    style={{
+                        left: ripple.x - ripple.size / 2,
+                        top: ripple.y - ripple.size / 2,
+                        width: ripple.size,
+                        height: ripple.size,
+                    }}
+                />
+            ))}
+        </Button>
+    );
+}
+
+function AppBanner() {
+    const reducedMotion = useReducedMotion();
+    const [screenIndex, setScreenIndex] = useState(0);
+    const [qrActive, setQrActive] = useState(false);
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        if (reducedMotion) return undefined;
+        const timer = setInterval(() => {
+            setScreenIndex((current) => (current + 1) % appBannerScreens.length);
+        }, 3200);
+        return () => clearInterval(timer);
+    }, [reducedMotion]);
+
+    function handleMouseMove(event) {
+        if (reducedMotion || !containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const px = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+        const py = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+        containerRef.current.style.setProperty('--parallax-x', `${px * 14}px`);
+        containerRef.current.style.setProperty('--parallax-y', `${py * 14}px`);
+    }
+
+    function handleMouseLeave() {
+        if (!containerRef.current) return;
+        containerRef.current.style.setProperty('--parallax-x', '0px');
+        containerRef.current.style.setProperty('--parallax-y', '0px');
+    }
+
+    const activeScreen = appBannerScreens[screenIndex];
+    const ScreenIcon = activeScreen.icon;
+
+    return (
+        <motion.section
+            {...fadeUp}
+            className="mx-auto max-w-7xl px-4 py-9 md:px-5"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            ref={containerRef}
+        >
+            <div className="app-banner-surface relative grid overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-950 via-medical-900 to-teal-700 p-6 text-white md:grid-cols-2 md:p-10">
+                {appBannerFloatingIcons.map(({ Icon, className, size, depth, drift }, index) => (
+                    <div
+                        key={index}
+                        aria-hidden="true"
+                        className={cn('pointer-events-none absolute hidden text-white/15 md:block', className)}
+                        style={{
+                            transform: `translate(calc(var(--parallax-x, 0px) * ${depth}), calc(var(--parallax-y, 0px) * ${depth}))`,
+                        }}
+                    >
+                        <div className="app-banner-icon" style={{ '--drift-x': drift }}>
+                            <Icon size={size} />
+                        </div>
+                    </div>
+                ))}
+
+                <motion.div
+                    initial={{ opacity: 0, x: 24 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: '-80px' }}
+                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                    className="relative z-10"
+                >
+                    <Badge className="app-banner-logo mb-5 bg-white/15 text-white">تطبيق الصيدلية</Badge>
                     <h2 className="text-3xl font-black md:text-5xl">اطلب أدويتك من الموبايل أسرع</h2>
                     <p className="mt-4 max-w-lg text-sm font-semibold leading-7 text-white/80">تنبيهات للطلبات، عروض خاصة، وسهولة متابعة السلة والدفع.</p>
-                    <div className="mt-7 flex flex-wrap gap-3">
-                        <Button className="bg-white text-slate-950 hover:bg-slate-100">App Store</Button>
-                        <Button className="bg-white text-slate-950 hover:bg-slate-100">Google Play</Button>
-                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-slate-950"><QrCode /></div>
+                    <div className="mt-7 flex flex-wrap items-center gap-3">
+                        <RippleButton
+                            className="bg-white text-slate-950 transition hover:scale-105 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-medical-900"
+                            aria-label="تحميل التطبيق من متجر آب ستور"
+                        >
+                            App Store
+                        </RippleButton>
+                        <RippleButton
+                            className="bg-white text-slate-950 transition hover:scale-105 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-medical-900"
+                            aria-label="تحميل التطبيق من متجر جوجل بلاي"
+                        >
+                            Google Play
+                        </RippleButton>
+                        <div
+                            className="app-banner-qr group relative grid h-12 w-12 place-items-center rounded-2xl bg-white text-slate-950 outline-none transition hover:scale-105 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-medical-900"
+                            role="img"
+                            aria-label="امسح رمز الاستجابة السريعة لتحميل التطبيق"
+                            tabIndex={0}
+                            onMouseEnter={() => setQrActive(true)}
+                            onMouseLeave={() => setQrActive(false)}
+                            onFocus={() => setQrActive(true)}
+                            onBlur={() => setQrActive(false)}
+                        >
+                            <QrCode />
+                            <AnimatePresence>
+                                {qrActive && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 6 }}
+                                        transition={{ duration: 0.18 }}
+                                        className="pointer-events-none absolute -top-11 right-1/2 translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-950 px-3 py-1.5 text-[11px] font-bold text-white shadow-lg"
+                                    >
+                                        امسح الكود حمّل فورًا
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
-                </div>
-                <div className="mt-8 flex justify-center md:mt-0">
-                    <div className="relative">
-                        <div className="absolute -inset-8 rounded-full bg-emerald-400/20 blur-3xl" />
-                        <div className="relative h-[360px] w-[210px] overflow-hidden rounded-[2.7rem] border-[10px] border-slate-950 bg-slate-950 p-2 shadow-2xl shadow-slate-950/35">
-                            <div className="h-full overflow-hidden rounded-[2rem] bg-slate-50 text-slate-950">
-                                <div className="bg-gradient-to-br from-medical-800 to-emerald-600 px-3 pb-3 pt-4 text-white">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="grid h-8 w-8 place-items-center rounded-2xl bg-white/15">
-                                            <Pill size={17} />
-                                        </div>
-                                        <div className="min-w-0 flex-1 text-right">
-                                            <div className="truncate text-[11px] font-black">صيدلية د. محمد رمضان</div>
-                                            <div className="truncate text-[8px] font-bold text-white/75">رعاية موثوقة وتسوق أسرع</div>
-                                        </div>
-                                        <div className="grid h-7 w-7 place-items-center rounded-xl bg-white/15">
-                                            <Bell size={13} />
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 flex h-8 items-center gap-2 rounded-2xl bg-white px-3 text-[8px] font-bold text-slate-500">
-                                        <Search size={12} />
-                                        ابحث عن دواء أو منتج صحي
-                                    </div>
-                                </div>
+                </motion.div>
 
-                                <div className="p-3">
-                                    <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-medical-800 via-emerald-600 to-teal-400 p-3 text-white">
-                                        <div className="text-[7px] font-black text-white/80">منتجات أصلية 100%</div>
-                                        <div className="mt-1 text-[19px] font-black leading-tight">عروض الصيدلية</div>
-                                        <div className="mt-1 text-[8px] font-bold leading-4 text-white/80">خصومات على منتجات العناية والصحة</div>
-                                        <div className="mt-3 grid h-16 place-items-center rounded-2xl bg-white/15">
-                                            <div className="h-10 w-14 rounded-xl bg-white shadow-lg">
-                                                <div className="mx-auto mt-3 h-2 w-9 rounded-full bg-medical-700" />
-                                                <div className="mx-auto mt-2 h-1.5 w-7 rounded-full bg-teal-300" />
+                <motion.div
+                    initial={{ opacity: 0, x: -24 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: '-80px' }}
+                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1], delay: 0.1 }}
+                    className="relative z-10 mt-8 flex justify-center md:mt-0"
+                >
+                    <div className="relative">
+                        <div className="absolute -inset-10 rounded-full bg-emerald-400/20 blur-3xl" />
+                        <div className="absolute -bottom-3 left-1/2 h-7 w-32 -translate-x-1/2 rounded-full bg-black/35 blur-xl" aria-hidden="true" />
+
+                        <div
+                            className="app-banner-mockup relative h-[412px] w-[192px] rounded-[46px] bg-gradient-to-br from-zinc-400 via-zinc-800 to-zinc-950 p-[2.5px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.55)]"
+                            style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.35), 0 25px 60px -15px rgba(0,0,0,0.55)' }}
+                        >
+                            {/* hardware buttons */}
+                            <div className="absolute -left-[2px] top-[82px] h-6 w-[3px] rounded-r-sm bg-gradient-to-b from-zinc-400 via-zinc-700 to-zinc-500" aria-hidden="true" />
+                            <div className="absolute -left-[2px] top-[112px] h-10 w-[3px] rounded-r-sm bg-gradient-to-b from-zinc-400 via-zinc-700 to-zinc-500" aria-hidden="true" />
+                            <div className="absolute -right-[2px] top-[96px] h-14 w-[3px] rounded-l-sm bg-gradient-to-b from-zinc-400 via-zinc-700 to-zinc-500" aria-hidden="true" />
+
+                            <div className="relative h-full w-full overflow-hidden rounded-[43.5px] bg-black p-[8px]">
+                                <div className="relative h-full w-full overflow-hidden rounded-[36px] bg-slate-50 text-slate-950" aria-hidden="true">
+                                    {/* status bar */}
+                                    <div className="relative z-20 flex items-center justify-between bg-medical-900 px-6 pb-1 pt-2.5 text-white">
+                                        <span className="text-[10px] font-black">٩:٤١</span>
+                                        <div className="flex items-center gap-1">
+                                            <SignalHigh size={11} />
+                                            <Wifi size={11} />
+                                            <BatteryFull size={13} />
+                                        </div>
+                                    </div>
+
+                                    {/* dynamic island */}
+                                    <div className="absolute left-1/2 top-[7px] z-30 flex h-[16px] w-[68px] -translate-x-1/2 items-center justify-end rounded-full bg-black px-1.5">
+                                        <span className="h-[5px] w-[5px] rounded-full bg-zinc-800 ring-[0.5px] ring-zinc-700" />
+                                    </div>
+
+                                    {/* glass reflection */}
+                                    <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-br from-white/15 via-transparent to-transparent" />
+                                    {/* home indicator */}
+                                    <div className="pointer-events-none absolute bottom-[6px] left-1/2 z-30 h-[4px] w-[86px] -translate-x-1/2 rounded-full bg-slate-950/70" />
+
+                                    <div className="bg-gradient-to-br from-medical-800 to-emerald-600 px-3 pb-3 pt-2 text-white">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="grid h-8 w-8 place-items-center rounded-2xl bg-white/15">
+                                                <Pill size={17} />
                                             </div>
+                                            <div className="min-w-0 flex-1 text-right">
+                                                <div className="truncate text-[11px] font-black">صيدلية د. محمد رمضان</div>
+                                                <div className="truncate text-[8px] font-bold text-white/75">رعاية موثوقة وتسوق أسرع</div>
+                                            </div>
+                                            <div className="grid h-7 w-7 place-items-center rounded-xl bg-white/15">
+                                                <Bell size={13} />
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 flex h-8 items-center gap-2 rounded-2xl bg-white px-3 text-[8px] font-bold text-slate-500">
+                                            <Search size={12} />
+                                            ابحث عن دواء أو منتج صحي
+                                        </div>
+                                    </div>
+
+                                <div className="p-3 pb-5">
+                                    <div className="relative h-[104px] overflow-hidden rounded-3xl bg-gradient-to-br from-medical-800 via-emerald-600 to-teal-400 text-white">
+                                        <AnimatePresence mode="wait">
+                                            <motion.div
+                                                key={screenIndex}
+                                                initial={reducedMotion ? false : { opacity: 0, x: 12 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={reducedMotion ? undefined : { opacity: 0, x: -12 }}
+                                                transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+                                                className="absolute inset-0 p-3"
+                                            >
+                                                <div className="flex items-center gap-1 text-[7px] font-black text-white/80">
+                                                    <ScreenIcon size={9} />
+                                                    {activeScreen.eyebrow}
+                                                </div>
+                                                <div className="mt-1 text-[17px] font-black leading-tight">{activeScreen.title}</div>
+                                                <div className="mt-1 text-[8px] font-bold leading-4 text-white/80">{activeScreen.text}</div>
+                                            </motion.div>
+                                        </AnimatePresence>
+                                        <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1">
+                                            {appBannerScreens.map((_, dotIndex) => (
+                                                <span
+                                                    key={dotIndex}
+                                                    className={cn(
+                                                        'h-1 rounded-full transition-all duration-300',
+                                                        dotIndex === screenIndex ? 'w-3 bg-white' : 'w-1 bg-white/40'
+                                                    )}
+                                                />
+                                            ))}
                                         </div>
                                     </div>
 
@@ -580,11 +808,12 @@ function AppBanner() {
                                     </div>
                                 </div>
                             </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
             </div>
-        </section>
+        </motion.section>
     );
 }
 

@@ -118,13 +118,13 @@ class HomeSectionController extends Controller
         $data = $request->validate([
             'existing' => ['nullable', 'array'],
             'existing.*.name' => ['nullable', 'string', 'max:120'],
-            'existing.*.url' => ['nullable', 'string', 'max:500'],
+            'existing.*.url' => ['nullable', 'url', 'starts_with:http://,https://', 'max:500'],
             'existing.*.image' => ['nullable', 'string', 'max:500'],
             'existing.*.remove' => ['nullable', 'boolean'],
             'brand_names' => ['nullable', 'array'],
             'brand_names.*' => ['nullable', 'string', 'max:120'],
             'brand_urls' => ['nullable', 'array'],
-            'brand_urls.*' => ['nullable', 'string', 'max:500'],
+            'brand_urls.*' => ['nullable', 'url', 'starts_with:http://,https://', 'max:500'],
             'brand_logos' => ['nullable', 'array'],
             'brand_logos.*' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp,image/svg+xml', 'max:4096'],
         ]);
@@ -154,16 +154,42 @@ class HomeSectionController extends Controller
             }
 
             $name = trim((string) ($data['brand_names'][$index] ?? ''));
+            $path = $file->store('brands', 'public');
+            $this->sanitizeIfSvg($path);
+
             $brands[] = [
                 'name' => $name ?: pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
                 'url' => trim((string) ($data['brand_urls'][$index] ?? '')),
-                'image' => $file->store('brands', 'public'),
+                'image' => $path,
             ];
         }
 
         StoreSetting::setValue('home_brand_logos_json', json_encode(array_values($brands), JSON_UNESCAPED_UNICODE));
 
         return back()->with('success', 'تم تحديث لوجوهات الماركات بنجاح');
+    }
+
+    /**
+     * SVG can carry <script> tags and event-handler attributes that execute
+     * when the file is opened directly in a browser. Strip that out before
+     * the upload is served, since mimetype validation alone doesn't stop it.
+     */
+    private function sanitizeIfSvg(string $path): void
+    {
+        if (strtolower(pathinfo($path, PATHINFO_EXTENSION)) !== 'svg') {
+            return;
+        }
+
+        $disk = Storage::disk('public');
+        $contents = (string) $disk->get($path);
+
+        $contents = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $contents) ?? $contents;
+        $contents = preg_replace('/\son\w+\s*=\s*"[^"]*"/i', '', $contents) ?? $contents;
+        $contents = preg_replace("/\son\w+\s*=\s*'[^']*'/i", '', $contents) ?? $contents;
+        $contents = preg_replace('/(href|xlink:href)\s*=\s*"\s*javascript:[^"]*"/i', '$1="#"', $contents) ?? $contents;
+        $contents = preg_replace('/<foreignObject\b[^>]*>.*?<\/foreignObject>/is', '', $contents) ?? $contents;
+
+        $disk->put($path, $contents);
     }
 
     private function brandLogos(): array

@@ -37,7 +37,7 @@ class JournalEntryController extends Controller
             'entry_date' => ['required', 'date'],
             'description' => ['nullable', 'max:2000'],
             'account_id' => ['required', 'array', 'min:2'],
-            'account_id.*' => ['required', 'exists:finance_accounts,id'],
+            'account_id.*' => ['nullable', 'exists:finance_accounts,id'],
             'debit' => ['required', 'array'],
             'debit.*' => ['nullable', 'numeric', 'min:0'],
             'credit' => ['required', 'array'],
@@ -50,6 +50,19 @@ class JournalEntryController extends Controller
         foreach ($data['account_id'] as $i => $accountId) {
             $debit = (float) ($data['debit'][$i] ?? 0);
             $credit = (float) ($data['credit'][$i] ?? 0);
+
+            if (empty($accountId) && $debit == 0.0 && $credit == 0.0) {
+                continue;
+            }
+
+            if (empty($accountId)) {
+                return back()->withInput()->with('error', 'يجب اختيار حساب لكل سطر يحتوي على مبلغ.');
+            }
+
+            if ($debit > 0 && $credit > 0) {
+                return back()->withInput()->with('error', 'لا يمكن أن يحتوي نفس السطر على مدين ودائن معاً.');
+            }
+
             if ($debit == 0.0 && $credit == 0.0) {
                 continue;
             }
@@ -64,6 +77,12 @@ class JournalEntryController extends Controller
 
         if (count($lines) < 2) {
             return back()->withInput()->with('error', 'لا بد من إدخال طرفي القيد على الأقل.');
+        }
+
+        $totalDebit = array_sum(array_column($lines, 'debit'));
+        $totalCredit = array_sum(array_column($lines, 'credit'));
+        if (round($totalDebit, 2) !== round($totalCredit, 2)) {
+            return back()->withInput()->with('error', 'القيد غير متوازن: إجمالي المدين يجب أن يساوي إجمالي الدائن.');
         }
 
         $accounting->createJournalEntry(

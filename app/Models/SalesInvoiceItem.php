@@ -23,4 +23,14 @@ class SalesInvoiceItem extends Model
         'unit_price' => 'decimal:2',
         'line_total' => 'decimal:2',
     ];
+
+    public function salesInvoice()
+    {
+        return $this->belongsTo(SalesInvoice::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
 }

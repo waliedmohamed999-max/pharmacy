@@ -17,10 +17,17 @@ class AccountController extends Controller
             ->get();
 
         $all = FinanceAccount::query()->orderBy('code')->get();
+        $summary = [
+            'total' => $all->count(),
+            'active' => $all->where('is_active', true)->count(),
+            'system' => $all->where('is_system', true)->count(),
+            'types' => $all->groupBy('type')->map->count(),
+        ];
 
         return view('admin.accounting.accounts.index', [
             'roots' => $roots,
             'allAccounts' => $all,
+            'summary' => $summary,
         ]);
     }
 

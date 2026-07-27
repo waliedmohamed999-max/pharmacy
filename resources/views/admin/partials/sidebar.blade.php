@@ -32,7 +32,6 @@
             'label' => 'المالية والإدارة',
             'items' => [
                 ['label' => 'المركز المالي', 'route' => 'admin.finance.index', 'match' => 'admin.finance.*', 'icon' => 'wallet'],
-                ['label' => 'النظام المحاسبي', 'route' => 'admin.accounting.index', 'match' => 'admin.accounting.*', 'icon' => 'receipt'],
                 ['label' => 'الموظفون والصلاحيات', 'route' => 'admin.users.permissions.index', 'match' => 'admin.users.permissions.*', 'icon' => 'user-cog'],
             ],
         ],
