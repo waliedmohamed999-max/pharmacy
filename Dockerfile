@@ -4,7 +4,9 @@ WORKDIR /var/www/pharmacy
 
 RUN apk add --no-cache \
     bash icu-dev libzip-dev oniguruma-dev mysql-client \
-    && docker-php-ext-install intl mbstring pdo_mysql zip opcache
+    freetype-dev libjpeg-turbo-dev libpng-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install intl mbstring pdo_mysql zip opcache gd
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY composer.json composer.lock ./
